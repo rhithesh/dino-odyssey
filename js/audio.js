@@ -154,6 +154,8 @@
         case 'go': tone(sfxBus, t, 880, .35, { vol: .16 }); tone(sfxBus, t, 1320, .35, { vol: .07 }); break;
         case 'win': [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) => tone(sfxBus, t + i * .09, f, i > 5 ? .6 : .14, { vol: .14 })); break;
         case 'star': tone(sfxBus, t, 1047, .1, { vol: .12 }); tone(sfxBus, t + .07, 1568, .3, { vol: .12, type: 'triangle' }); break;
+        case 'laser': tone(sfxBus, t, 1500, .16, { type: 'sawtooth', vol: .10, slide: .22, filter: 2600 }); noise(sfxBus, t, .10, { vol: .07, hp: 3200 }); break;
+        case 'wave': noise(sfxBus, t, 1.7, { vol: .36, lp: 420 }); tone(sfxBus, t, 72, 1.5, { type: 'sine', vol: .28, slide: .8 }); break;
         case 'glitch': for (let i = 0; i < 6; i++) tone(sfxBus, t + i * .03, 100 + Math.random() * 1500, .04, { type: 'square', vol: .07 }); break;
         case 'click': tone(sfxBus, t, 1200, .04, { vol: .08 }); break;
       }

@@ -7,14 +7,14 @@
 **Name:** No Internet: Dino Odyssey (short: Dino Odyssey)
 **Tagline:** The offline dino game, reimagined.
 **Form factor:** Chrome extension Side Panel (`sidepanel.html`). Click toolbar icon → opens side panel → play.
-**Fantasy:** Classic Chrome dino runner evolved into 8 cinematic worlds, 3 boss fights, 19 collectible dinosaurs with their own perks, and a procedural chiptune soundtrack.
+**Fantasy:** Classic Chrome dino runner evolved into 11 cinematic worlds, 3 boss fights, 19 collectible dinosaurs with their own perks, and a procedural chiptune soundtrack.
 **Offline-first:** Zero network calls. All art procedurally drawn on canvas, all music synthesized via Web Audio. Works with no internet (title chip explicitly leans into this: "No internet? No problem." / "You're offline — perfect timing.").
 
 ## 2. Goals / non-goals
 
 Goals (as implemented):
 - Pick-up-and-play runner with one-button core (jump / hold for higher).
-- Variety via 8 worlds that each bend one rule but keep the same run/dodge core.
+- Variety via 11 worlds that each bend one rule but keep the same run/dodge core.
 - AAA-feel on tiny budget: cinematic intro, letterbox, banners, slow-mo, shake, flash, boss warnings.
 - Replayability: 3-star per world, best score, coins, close-call combo, and a 19-species Dino Dex to unlock and equip.
 - Zero assets to download.
@@ -30,7 +30,9 @@ Anyone staring at Chrome with bad wifi. Side-panel sized (narrow vertical ~280 l
 
 ## 4. Worlds / Levels (content spec)
 
-Sequential unlock. `save.unlocked` gates. All distances in meters (1m = 10px scroll).
+**Current build:** every world is unlocked from the start (`UNLOCK_ALL = true` in `js/ui.js`) so the whole campaign can be tested. For production, flip that flag and the sequential rules below apply.
+
+Sequential unlock. `save.unlocked` gates, with one exception: World 11 (`alwaysOpen`) is playable from the very first launch and sits outside the unlock chain — clearing it never advances the campaign. All distances in meters (1m = 10px scroll).
 
 | # | Name | Tagline | Twist (banner) | Mode | BG / Weather | Ground / Flyer | Goal | Speed range | Gap | Boss |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -42,8 +44,17 @@ Sequential unlock. `save.unlocked` gates. All distances in meters (1m = 10px scr
 | 6 | HAUNTED HOLLOW | Something follows... | DARKNESS — lightning reveals all | run | haunted / fog | tomb / ghost (phase, only solid when visible) + dark | 1200m | 220-305 | 1.0-1.8 | PHANTOM KING, 6HP, [high, low, rain, low, slam] |
 | 7 | ZERO-G STATION | Gravity optional. | GRAVITY FLIP — tap to swap floor/ceiling | flip | space / stars | crystal / ufo | 1200m | 220-300 | 0.85-1.5 | – |
 | 8 | EXTINCTION | 66M years in making. | REALITY GLITCH — every rule at once | mix | glitch / glitch | glitch / ptero + meteor | 1500m | 235-335 | 0.9-1.6 | THE EXTINCTION EVENT, 8HP, [low, high, rain, slam, low, high] |
+| 9 | CYBER VAULT | The grid is awake. | LASER GRID — low beams need a jump, high beams a duck | run | vault / sparks | plate / sentinel | 1100m | 215-300 | 1.05-1.8 | – |
+| 10 | TIDAL SHORE | The sea wants it back. | TSUNAMI — get to high ground | run | shore / dust | rock / gull | 1050m | 205-290 | 1.05-1.85 | – |
+| 11 | NO INTERNET | The one that started it all. Still offline. | RETRO MODE — the original dino, exactly as you remember | run | retro / none | chrome cactus / ptero | 900m | 200-285 | 1.05-1.95 | – |
 
 Mix phases (World 8, by progress fraction): CLASSIC (run) → GRAVITY FLIP (flip) → METEOR STORM (run+fallers) → FLOOD (swim) → BLACKOUT (run+dark).
+
+**World 9 — CYBER VAULT.** Laser fences float across the corridor in low/high alternation, each one charging (dashed glow) for 0.42 s, firing for 0.5 s, then shutting off for the rest of a ~1.6–1.9 s cycle. A low fence (top of the floor, 8 px) must be jumped; a high fence (head height, 12 px) must be ducked or jumped. While off, the beam is harmless — the charge glow is the tell. Obstacles are server stacks; the flyer is a scanning sentinel orb; emitters zap on the frame they fire.
+
+**World 10 — TIDAL SHORE.** Every 7–11 s the sea surges: 1.6 s warning banner (`⚠ TSUNAMI`) + rumble, a 0.9 s rise to 46 px of water, 0.7 s hold, 1.2 s fall. Standing on flooded sand costs a heart (once per surge, through i-frames); the guaranteed raised rock shelf (58–63 px tall, ~560 px long, spawned ahead of the wave) keeps you dry. Normal obstacle spawning pauses for the whole surge so the lane to the shelf is clear, and resumes 1.2 s after the water drops. Shelves are real surfaces: you land on top, ride them while they scroll, and drop off the end.
+
+**World 11 — NO INTERNET (the retro world).** A faithful recreation of the Chrome offline page, playable from the very first launch and sitting outside the unlock chain: flat `#f7f7f7` paper sky, drifting 2-bit pixel clouds, a single 2px horizon with stray pebbles, the authentic fat-trunk/twin-arm cactus (small + large), classic pterodactyls at three heights, and the dino drawn in `#535353`. The HUD flips to dark ink, the cinematic title card and banners use light backgrounds, the vignette drops to 10%, and the hurt flash becomes an alpha blink (a white flash would vanish on white). If the equipped species is a pale one it gets a soft dark edge so it still reads against the sky.
 
 Tips per world shown on death screen (e.g. W1: hold SPACE higher, ↓ slam; W4: lava pits jump early, grab orbs to strike back).
 
@@ -163,7 +174,7 @@ bossIntro (siren + WARNING stripes + slide-in) → boss (dodge pattern, orbs eve
 
 ## 7. UX / Screens
 
-Title (logo, offline chip, PLAY/CONTINUE, LEVELS, SOUND, HOW TO, animated demo behind) → LEVELS (scroll cards with live canvas thumb + stars + BEST + BOSS tag + lock) + DINO DEX (see 4B) from title and worlds screens → HOW TO → Game HUD (hearts — 1 to 4 depending on species —, score, coins, progress bar/flag OR boss bar, combo, twist tag, pause) → PAUSE (resume/restart/worlds) → RESULT (title slam, staggered stars with sfx, stats rows, species-unlock toast if triggered, NEXT/REPLAY/WORLDS) → OVER (stats + tip + TRY AGAIN/WORLDS). Touch pads only in-game. Cinematic intro (WORLD card 0-2.1s, 3-2-1 count, GO banner), boss warning, win card, letterbox bars that close on intros/boss/win/dead.
+Title (logo, offline chip, PLAY/CONTINUE, LEVELS, SOUND, HOW TO, animated demo behind) → LEVELS (scroll cards with live canvas thumb + stars + BEST, no badge chips) + DINO DEX (see 4B) from title and worlds screens → HOW TO → Game HUD (hearts — 1 to 4 depending on species —, score, coins, progress bar/flag OR boss bar, combo, pause; no floating twist/dash chips) → PAUSE (resume/restart/worlds) → RESULT (title slam, staggered stars with sfx, stats rows, species-unlock toast if triggered, NEXT/REPLAY/WORLDS) → OVER (stats + tip + TRY AGAIN/WORLDS). Touch pads only in-game. Cinematic intro (WORLD card 0-2.1s, 3-2-1 count, GO banner), boss warning, win card, letterbox bars that close on intros/boss/win/dead.
 
 ## 8. Audio (product view)
 
@@ -172,10 +183,10 @@ Per-world bpm/root/scale/prog/lead/arp/pad/echo/drive. Boss = same cfg 1.12x fas
 ## 9. Acceptance (v1.2.0)
 
 - Loads unpacked, icon opens side panel, playable offline.
-- All 8 worlds completable, bosses killable, stars/best persist.
+- All 11 worlds completable, bosses killable, stars/best persist.
 - 60fps-ish on side-panel size, no external requests.
 - 19 species defined in `DR.DINOS`, all unlockable via world-clear + star gates; equip persists via `save.dino`.
-- Every species renders all frames (stand, 4 walk, jump, 4 duck, hurt) without error in all 8 worlds.
+- Every species renders all frames (stand, 4 walk, jump, 4 duck, hurt) without error in all 11 worlds.
 - Perks verified in-run: Carnotaurus lava bounce (first pit only), Pachycephalosaurus faller block, Ankylosaurus 4 hearts, Brachiosaurus 1 heart, Stegosaurus 2.0 s i-frames, Microraptor coyote, Allosaurus combo. Triceratops smash and the remaining stat perks are wired but not individually exercised.
 - Power bars verified: buying a bar and the rising price, refund of earlier one-off powers, per-dino bars, Agility 5 → Double Jump, Dash from 1 bar, Toughness 5 → +1 heart, 3D page, Dex → page → back, Equip, Dash invincibility/cooldown, double jump once per airtime.
 - Not verified: real hand-played balance, audio by ear, motion feel of the walk cycle in live Chrome.

@@ -9,6 +9,7 @@
 <body>
 <div id="app">
   <canvas id="game"></canvas>
+  <div id="veil" class="hidden"></div>
 
   <!-- In-game HUD -->
   <div id="hud" class="hidden">
@@ -26,8 +27,6 @@
       <div class="bar"><div id="bossFill"></div></div>
     </div>
     <div id="combo"></div>
-    <div id="twistTag"></div>
-    <div id="dashTag" class="hidden"><div id="dashFill"></div><span id="dashText">≫ DASH · SHIFT</span></div>
   </div>
 
   <!-- Touch / mouse controls -->
@@ -43,7 +42,7 @@
     <div class="logo">
       <div class="logo-small">NO INTERNET</div>
       <div class="logo-big">DINO<br>ODYSSEY</div>
-      <div class="logo-sub">8 worlds · 3 bosses · 19 dinos</div>
+      <div class="logo-sub">11 worlds · 3 bosses · 19 dinos</div>
     </div>
     <div class="menu">
       <button class="btn primary" id="btnContinue">▶ PLAY</button>
@@ -110,7 +109,7 @@
       <p><kbd>P</kbd> / <kbd>ESC</kbd> — Pause &nbsp; <kbd>M</kbd> — Mute</p>
       <hr>
       <p>Reach the <b>⚑ finish</b> to clear a world. You have <b>3 hearts</b>.</p>
-      <p>Clear worlds and earn ★ to unlock <b>19 dinosaurs</b>, each with its own perk.</p>
+      <p>Clear worlds and earn ★ to unlock <b>19 dinosaurs</b>, each with its own strengths.</p>
       <p>Spend coins in <b>DINO UPGRADES</b> on 4 powers per dino: Spring Legs, Thick Hide, <b>Double Jump</b> and <b>Dash</b>.</p>
       <p>Dodge things by a hair for <b>CLOSE CALL</b> bonuses that build your combo.</p>
       <p>Bosses throw <b class="glow">glowing orbs</b> — grab them to fire back!</p>

@@ -7,6 +7,7 @@
 
   // ---------------- spawning ----------------
   G.spawnUpdate = function (dt) {
+    if (this.tidePhase && this.tidePhase !== 'idle') return; // the surge owns the lane
     this.nextSpawn -= this.speed * dt;
     if (this.nextSpawn > 0) return;
     const L = this.L, d = clamp(this.dist / L.goal, 0, 1);
@@ -19,6 +20,7 @@
 
   G.spawnRun = function (d) {
     const L = this.L, x = this.W + 20, r = R();
+    if (L.lasers && d > .12 && r < .34) { this.addLaser(x); return; }
     if (this.fallersOn && !this.demo && r < .24) {
       const n = d > .5 && R() < .5 ? 2 : 1;
       for (let i = 0; i < n; i++) this.addFaller(150 + i * 70 + R() * 50, L.fallers === 'icicle' ? 'icicle' : 'meteor');
@@ -95,6 +97,26 @@
     if (L.ghostPhase) { o.phase = true; o.alpha = 1; o.glow = 18; }
     this.obs.push(o);
   };
+  // Laser fence: a floating beam segment that charges, fires, then shuts off.
+  G.addLaser = function (x) {
+    // Alternate low/high so the vault reads as a beat: jump, duck, jump, duck.
+    const hi = (this.laserFlip = R() < .15 ? this.laserFlip : !this.laserFlip);
+    const GY = this.GY, w = 34 + (R() * 22 | 0);
+    this.obs.push({
+      kind: 'laser', x, y: hi ? GY - 23 : GY - 9, w, h: hi ? 12 : 8, hi,
+      t: 0, period: 1.6 + R() * .3, warn: .42, fire: .5, on: false, wasOn: false, glow: 26,
+    });
+    if (R() < .5) this.addCoinArc(x + w / 2, GY - (hi ? 46 : 62), 3);
+  };
+  // Raised rock shelf wide enough to ride out a whole surge.
+  G.addPlat = function (x, w = 560) {
+    const h = 58 + (R() * 5 | 0);
+    const o = { kind: 'plat', x, y: this.GY - h, w, h: 20, t: 0 };
+    this.obs.push(o);
+    for (let i = 0; i < 4; i++) this.coins.push({ x: x + 24 + i * 17, y: this.GY - h - 14, t: i * .2 });
+    this.coinsSpawned += 4;
+    return o;
+  };
   G.addFaller = function (landX, sub) {
     const ft = Math.sqrt(2 * (this.GY + 24) / 1000);
     const trigX = landX + this.speed * ft;
@@ -116,6 +138,8 @@
       case 'mine': return { x: o.x - 5, y: o.y - 5, w: 10, h: 10 };
       case 'proj': return { x: o.x - o.r + 1, y: o.y - o.r + 1, w: o.r * 2 - 2, h: o.r * 2 - 2 };
       case 'shock': return { x: o.x, y: this.GY - o.h, w: o.w, h: o.h };
+      case 'laser': return o.on ? { x: o.x + 1, y: o.y + 1, w: o.w - 2, h: o.h - 2 } : null;
+      case 'plat': return null; // the top surface is handled by player physics
       default: return null;
     }
   };
@@ -143,6 +167,15 @@
           if (o.phase) o.alpha = .5 + .5 * Math.sin(o.t * 2.4 + o.ph);
           break;
         case 'mine': o.y = o.by + Math.sin(o.t * 2) * 4; break;
+        case 'laser': {
+          const ph = ((o.t % o.period) + o.period) % o.period;
+          o.wasOn = o.on;
+          o.on = ph >= o.warn && ph < o.warn + o.fire;
+          o.charge = ph >= o.warn - .22 && ph < o.warn;
+          if (o.on && !o.wasOn && o.x < this.W + 30 && o.x > -20) DR.Audio.sfx('laser');
+          if (o.on && R() < .5) this.fx.burst(o.x + R() * o.w, o.y + o.h / 2, 1, { color: [this.L.palette.line, '#fff'], speed: 26, grav: 0, life: .22, size: 1.5, glow: true, shape: 'shrink' });
+          break;
+        }
         case 'faller':
           if (!o.falling && o.x <= o.trigX) { o.falling = true; o.y = -24; }
           if (o.falling) {
@@ -360,6 +393,33 @@
           } else {
             ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(255,120,0,.35)'; ctx.beginPath(); ctx.arc(x, y, 9, 0, 6.3); ctx.fill(); ctx.globalCompositeOperation = 'source-over';
             ctx.fillStyle = '#4a2c26'; ctx.fillRect(x - 5, y - 5, 10, 10); ctx.fillStyle = '#ff6a00'; ctx.fillRect(x - 3, y - 3, 3, 3); ctx.fillStyle = '#ffd000'; ctx.fillRect(x - 1, y - 6, 2, 2);
+          }
+          break;
+        }
+        case 'plat': {
+          const PP = this.L.palette;
+          ctx.fillStyle = 'rgba(0,0,0,.26)'; ctx.fillRect(x + 8, GY - 3, o.w - 16, 3);
+          ctx.fillStyle = PP.groundDark; ctx.fillRect(x, y + 12, o.w, 8);
+          ctx.fillStyle = PP.ground; ctx.fillRect(x, y, o.w, 12);
+          ctx.fillStyle = 'rgba(255,255,255,.3)'; ctx.fillRect(x, y, o.w, 2);
+          ctx.fillStyle = 'rgba(120,200,220,.35)'; ctx.fillRect(x, y + 12, o.w, 2);
+          for (let i = 0; i < o.w; i += 37) { ctx.fillStyle = PP.groundDark; ctx.fillRect(x + i + 5, y + 6, 4, 3); }
+          break;
+        }
+        case 'laser': {
+          const col = this.L.palette.line;
+          ctx.fillStyle = o.on ? col : 'rgba(120,190,210,.55)';
+          ctx.fillRect(x - 2, y - 1, 4, o.h + 2);
+          ctx.fillRect(x + o.w - 2, y - 1, 4, o.h + 2);
+          if (o.on) {
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.fillStyle = 'rgba(37,232,255,.22)'; ctx.fillRect(x - 4, y - 5, o.w + 8, o.h + 10);
+            ctx.fillStyle = col; ctx.fillRect(x, y, o.w, o.h);
+            ctx.fillStyle = '#fff'; ctx.fillRect(x, y + o.h / 2 - 1, o.w, 2);
+            ctx.globalCompositeOperation = 'source-over';
+          } else {
+            ctx.fillStyle = `rgba(37,232,255,${o.charge ? .55 + .45 * Math.sin(t * 40) : .18})`;
+            for (let i = 0; i < o.w; i += 5) ctx.fillRect(x + i, y + o.h / 2, 2, 1);
           }
           break;
         }

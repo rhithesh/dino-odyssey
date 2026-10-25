@@ -210,6 +210,16 @@ window.DR = window.DR || {};
       ['#             #', '##    # #    ##', '###   ###   ###', '#### #o#o# ####', ' #############', '  ###########  ', '   #  ###  #   ', '        #      '],
       ['               ', '      # #      ', '      ###      ', '  ## #o#o# ##  ', ' #############', '###  #####  ###', '#     ###     #', '       #       '],
     ],
+    // Vault security orb: a single scanning eye.
+    sentinel: [
+      ['   ####   ', '  ######  ', ' ##oooo## ', '###oooo###', ' ##oooo## ', '  ######  ', '   ####   ', '    ++    '],
+      ['   ####   ', '  #oooo#  ', ' ##oooo## ', '###oooo###', ' ##oooo## ', '  #oooo#  ', '   ####   ', '    ++    '],
+    ],
+    // Shore gull, wings up / wings down.
+    gull: [
+      ['#          #', '##  ####  ##', ' #####oo#####', '   ######   ', '     ##     '],
+      ['            ', '   ######   ', ' #####oo#####', '##  ####  ##', '#          #'],
+    ],
   };
 
   // ---------------- Ground obstacle generators ----------------
@@ -226,6 +236,16 @@ window.DR = window.DR || {};
     switch (kind) {
       case 'cactus': return spr(big ? CACTUS_L : CACTUS_S, { '#': P.obstacle });
       case 'chrome': return spr(big ? CHROME_L : CHROME_S, { '#': P.obstacle });
+      case 'plate': { // vault server stack
+        const w = big ? 16 : 11, h = big ? 21 : 14, c = mk(w, h), g = c.getContext('2d');
+        g.fillStyle = P.obstacle; g.fillRect(0, 2, w, h - 2);
+        g.fillStyle = P.groundDark; g.fillRect(0, 2, w, 2);
+        g.fillStyle = 'rgba(0,0,0,.4)'; for (let y = 6; y < h - 5; y += 4) g.fillRect(2, y, w - 4, 1);
+        g.fillStyle = P.line; g.fillRect(1, h - 4, w - 2, 1);
+        g.fillStyle = P.accent2; g.fillRect(w - 4, 4, 2, 2);
+        g.fillStyle = 'rgba(255,255,255,.25)'; g.fillRect(2, 4, 2, 1);
+        return c;
+      }
       case 'barrier': {
         const w = big ? 14 : 10, h = big ? 20 : 13, c = mk(w, h), g = c.getContext('2d');
         g.fillStyle = P.obstacle; g.fillRect(1, 2, 2, h - 2); g.fillRect(w - 3, 2, 2, h - 2);

@@ -72,13 +72,13 @@ Boss API: `bossIntroUpdate/bossUpdate/bossAttack(low|high|rain|slam)/spawnOrb/fi
 
 ## 8. Backgrounds (backgrounds.js)
 
-`build(L,W,H,GY)`: `LW=W*2` tileable layers. Helpers `sky()` (14-band posterize+dither), `ridge()` (integer-cycle sines, seedable, flat quantize), `disc()`. Per theme painters (desert/city/tundra/volcano/ocean/haunted/space/glitch) returning `{sky,layers[{img,speed}],ground,extra?,front?,groundFx?}`. `draw` wraps with modulo; `drawGround` + `groundTile()` (seeded texture + theme accents: volcano lava cracks, city neon, space panel lines). Extras: aurora ribbons (additive), volcano smoke+glow, ocean god-rays, city lamp cones, glitch grid floor. Colors via `DR.color.mix`.
+`build(L,W,H,GY)`: `LW=W*2` tileable layers. Helpers `sky()` (14-band posterize+dither), `ridge()` (integer-cycle sines, seedable, flat quantize), `disc()`. Per theme painters (desert/city/tundra/volcano/ocean/haunted/space/glitch/**retro**/**vault**/**shore**) returning `{sky,layers[{img,speed}],ground,extra?,front?,groundFx?}`. `draw` wraps with modulo; `drawGround` + `groundTile()` (seeded texture + theme accents: volcano lava cracks, city neon, space panel lines; `L.bg==='retro'` early-returns a white floor with a 2px horizon and pebbles). Extras: aurora ribbons (additive), volcano smoke+glow, ocean god-rays, city lamp cones, glitch grid floor, retro pixel clouds. Colors via `DR.color.mix`.
 
 ## 9. Sprites (sprites.js)
 
 String-map `spr(rows,colors)`; seeded `rng` mulberry32; `mk(w,h)` canvas factory.
 
-**World art** is cached per level (`Sprites.level(L)`): flyers 2-frame ptero/drone/jelly/ghost/ufo/bat mapped `{ #:flyer, o:accent, +:accent2 }`; ground generators `genGround(kind,size,P,seed)` (cactus, barrier, ice, rock, kelp, tomb, crystal, glitch); 64×64 bosses `genBoss` (wyrm/phantom/meteor, procedural craters/face/crown); 4-frame coin squash; heart. `flyerOf/groundOf` give variants for the mixed final world.
+**World art** is cached per level (`Sprites.level(L)`): flyers 2-frame ptero/drone/jelly/ghost/ufo/bat/**sentinel**/**gull** mapped `{ #:flyer, o:accent, +:accent2 }`; ground generators `genGround(kind,size,P,seed)` (cactus, barrier, ice, rock, kelp, tomb, crystal, glitch, **chrome**, **plate**); 64×64 bosses `genBoss` (wyrm/phantom/meteor, procedural craters/face/crown); 4-frame coin squash; heart. `flyerOf/groundOf` give variants for the mixed final world.
 
 **Player art** is separate: `Sprites.forLevel(L, dinoId)` = `{...level(L), dino, dinoHurt}` where the dino set comes from `Sprites.dinoOf(id, palette)`, cached per species (classic Compsognathus cached per palette because it is world-tinted). Each set is `{stand, run[4], duck[4], jump}`; `dinoHurt` is the same set recolored white with a red eye (`d` → `#d8d8e0`).
 
@@ -94,7 +94,7 @@ Species build pipeline (`species(D, colors, outline)`):
 ## 10. FX / weather (fx.js)
 
 `FX(W,H,GY)`: `parts[] {x,y,vx,vy,life,max,size,color,grav,drag,glow,shape,ring?}`, `texts[]`, `weather[]`, `flash,flashColor,wind,glitch`, offscreen `dark` + precomputed `vig` radial.
-`burst(n, angle/spread/speed/life/size/color/grav/drag/vx/glow/shrink)`, `ring`, `text`, `doFlash`. `setWeather` counts: rain90/snow110/dust40/embers60/bubbles40/fog7/stars50/glitch30. Per-kind `upd/drawWeather` (rain splash bursts, snow wind, dust scroll, embers rise, bubbles rise, fog drift, stars parallax, glitch 0/1 text). `update` integrates + decays flash/glitch. `drawDark(amount,lights)` punches radial holes via destination-out. `post(grade)` applies palette grade + vignette + flash.
+`burst(n, angle/spread/speed/life/size/color/grav/drag/vx/glow/shrink)`, `ring`, `text`, `doFlash`. `setWeather` counts: rain90/snow110/dust40/embers60/bubbles40/fog7/stars50/glitch30. Per-kind `upd/drawWeather` (rain splash bursts, snow wind, dust scroll, embers rise, bubbles rise, fog drift, stars parallax, glitch 0/1 text). `update` integrates + decays flash/glitch. `drawDark(amount,lights)` punches radial holes via destination-out. `post(grade, vig=1)` applies palette grade + vignette (alpha-scaled; retro world passes `0.1`) + flash.
 
 ## 10B. Species data (dinos.js)
 
@@ -122,7 +122,7 @@ Perk wiring (single point each): `st.jumpV/hold` in `tryAction`; `st.coyote/buff
 
 **Persistence.** `save.coins`, `save.bars = {dinoId: {jump?, tough?, agile?, dash?}}` (bought counts). Earlier `save.skills` one-off powers are refunded at their price and removed; `save.up` is dropped.
 
-**UI.** `scrDino`: `openDino(id, from)` / `buildDino(flash)` / `closeDino()`. Hero `#dpCanvas` (300×190) is a 3D turntable: the current walk frame is extruded into a slab (copies stacked along depth, inner copies = body colours ×0.62 with the outline stripped), sorted back-to-front by `z·cos(a)`, scaled horizontally by `cos(a)`; auto-spins, drag to spin. Each stat renders a `.meter` of 10 `<i>` (`base` white, `on` gold, `mark` milestone dot), a `n/10` count, hint and price button (🪙 cost / MAX). Dex lists the equipped dino first; cards open the page. Dash pad and `#dashTag` HUD pill shown when the equipped dino has ≥1 Dash bar.
+**UI.** `scrDino`: `openDino(id, from)` / `buildDino(flash)` / `closeDino()`. Hero `#dpCanvas` (300×190) is a 3D turntable: the current walk frame is extruded into a slab (copies stacked along depth, inner copies = body colours ×0.62 with the outline stripped), sorted back-to-front by `z·cos(a)`, scaled horizontally by `cos(a)`; auto-spins, drag to spin. Each stat renders a `.meter` of 10 `<i>` (`base` white, `on` gold, `mark` milestone dot), a `n/10` count, hint and price button (🪙 cost / MAX). Dex lists the equipped dino first; cards open the page. The Dash pad appears when the equipped dino has ≥1 Dash bar (the old `#dashTag` HUD pill was removed).
 
 ## 11. Audio (audio.js)
 
@@ -131,8 +131,8 @@ Lazy `AudioContext` on first input (autoplay policy). Graph: sources → musicBu
 
 ## 12. UI / persistence (ui.js + sidepanel.html/css)
 
-DOM: canvas + hud (hearts/score/coins/pause/progress/flag/bossBar/combo/twistTag) + touch pads + 7 screens (title, levels, help, pause, result, over, **dex**). `save = {unlocked:1,stars{},best{},last:1} ∪ dr_save`, plus `dino` (equipped id), `dinos[]` (announced) and `dexNew[]` (unseen). On load: missing `dinos` is seeded from currently unlocked species (silent migration), an invalid or locked `dino` resets to `compy`. `persist()`. HUD diff-cached (`hudCache`, including `maxHearts` so the heart row resizes per species) to avoid DOM churn; bossBar swaps progress. Screens via `show(id)`; HUD visible only when `id===null||scrPause`, touch only in-game.
-`startLevel(id,quick)`: init audio, set twistTag, `game.load(L,{quick,dino:save.dino})`. `buildLevels()`: thumb + equipped-species composite, lock filter, stars/best/boss tag, link to the Dex. `onEnd`: stars calc `1 + (coins>=70% ?1:0) + (hits==0?1:0)`, unlock next world, `claimUnlocks()` (newly unlocked species → `dinos[]`/`dexNew[]`, unlock card with sprite on the result screen), result anim (450ms+380ms stagger + star sfx), EXTINCT tip random.
+DOM: canvas + veil + hud (hearts/score/coins/pause/progress/flag/bossBar/combo) + touch pads + 7 screens (title, levels, help, pause, result, over, **dex**). `save = {unlocked:1,stars{},best{},last:1} ∪ dr_save`, plus `dino` (equipped id), `dinos[]` (announced) and `dexNew[]` (unseen). On load: missing `dinos` is seeded from currently unlocked species (silent migration), an invalid or locked `dino` resets to `compy`. `persist()`. HUD diff-cached (`hudCache`, including `maxHearts` so the heart row resizes per species) to avoid DOM churn; bossBar swaps progress. Screens via `show(id)`; HUD visible only when `id===null||scrPause`, touch only in-game. The world and Dex lists are full-bleed (`padding: 60px 0`, grids capped at 520px) so the cards occupy the panel edge-to-edge; the frosted backdrop (canvas `blur(13px) brightness(.6)` + `#veil` scrim at 50%) shows only in the vertical gaps between cards, never as side strips.
+`startLevel(id,quick)`: init audio, `game.load(L,{quick,dino:save.dino})`. `buildLevels()`: thumb + equipped-species composite, lock filter, stars/best, link to the Dex. `onEnd`: stars calc `1 + (coins>=70% ?1:0) + (hits==0?1:0)`, unlock next world, `claimUnlocks()` (newly unlocked species → `dinos[]`/`dexNew[]`, unlock card with sprite on the result screen), result anim (450ms+380ms stagger + star sfx), EXTINCT tip random.
 Input: keydown/up (SPACE/↑/W jump, ↓/S duck, P/ESC pause, M mute, Enter confirm), canvas pointerdown jump, pads with down class, pauseBtn stopPropagation, blur/hidden auto-pause, online/offline chip update. First pointerdown unlocks audio + starts title music.
 Dex: `openDex(from)` / `buildDex()` / `closeDex()`; `dinoCard(D,w,h,frame,locked)` draws a species on a small canvas (locked = `source-in` black silhouette). A `requestAnimationFrame` loop animates only the equipped or hovered card (4 frames at 110 ms). Equip → save, rebuild, restart the title demo. Esc closes. All buttons via `on(id,fn)` with click sfx.
 
@@ -148,3 +148,33 @@ Dex: `openDex(from)` / `buildDex()` / `closeDex()`; `dinoCard(D,w,h,frame,locked
 
 - `node --check js/*.js` passes (no imports to check). In this environment node lives at `/opt/homebrew/bin/node`.
 - Species: render a zoomed frame sheet of all 19 (stand, 4 walk, duck) on dark and light backgrounds and inspect; smoke-run every species through a level for 5 s of simulated frames with no exceptions; assert per-perk state (hearts, `st`, `perks`) after forced collisions; check the unlock card by calling `game.end(true)` on a world. Note: in the automated preview the tab is hidden, so `requestAnimationFrame` does not run and the game loop must be stepped manually (`update(1/60,1/60)` then `render()`). Manual: `python3 -m http.server` + load as unpacked extension, open side panel, play W1→W8, kill bosses via orbs, confirm stars persist after reload.
+
+
+## 16. Retro world (World 11, `L.retro`)
+
+Rebuilds the Chrome offline page rather than a cinematic theme. Data: `id:9, bg:'retro', weather:'none', ground:'chrome', retro:true`, palette all `#f7f7f7` paper with `#535353` ink (`dino`, `obstacle`, `flyer`, `line`, `accent`). Art: `THEMES.retro` (flat fill, two very light `ridge()` layers at parallax .05/.12, pixel clouds in `extra()` scrolling at .09), `CHROME_S/CHROME_L` string maps in `sprites.js` (fat trunk, arms at two heights) served by `genGround('chrome')`.
+
+Light-background guards, all keyed off `L.retro`:
+- `ui.js` toggles `document.body.retro` in `startLevel()` and `startDemo()`; `sidepanel.css` recolours score/coins/hearts/progress/flag/combo/twist chip/pause button/touch pads to `#535353`.
+- `drawIntro()` swaps `#fff` copy for `#535353`; `drawBanner()` uses a `rgba(247,247,247,.94)` bar with `#6b6b6b` sub-text; `post()` vignette 0.1.
+- `drawPlayer()` skips the white hurt sprite in favour of a 0.3-alpha blink, draws the normal sprite while dead (white death sprite would vanish), and adds a 2px soft shadow for pale species.
+
+`js/ui.js` also carries `const UNLOCK_ALL = true;` — a build-time switch that short-circuits `levelOpen()` so every world is playable while the campaign is being developed. Set it to `false` for production and the `save.unlocked` rules take over again (the frontier-only progression code is untouched).
+
+World 11 is `alwaysOpen: true`. `ui.js` centralises the check in `levelOpen(L) = L.alwaysOpen || L.id <= save.unlocked`, used by `buildLevels()` for the lock state (and the click guard). Progress only advances for the frontier world (`if (r.level === save.unlocked) save.unlocked = r.level + 1`), so clearing the retro world cannot unlock the campaign. The title backdrop pool excludes `alwaysOpen` levels because its light palette would fight the light-on-dark menu. Stars from World 11 still count toward totals and `{allStars}`.
+
+Also hardened two latent bugs surfaced while testing: `frame()` clamps `dt` to `[0, .033]` (a backwards clock used to produce negative scroll and a negative sprite index), and `drawPlayer()` wraps the walk frame modulo positively.
+
+## 17. Cyber Vault (World 9, `L.lasers`)
+
+`spawnRun()` gets first refusal: `L.lasers && dist/goal > .12 && r < .34` → `addLaser(x)`. Each fence is `{kind:'laser', w:34-56, h:8|12, y:GY-9|GY-23, period:1.6-1.9, warn:.42, fire:.5, t}`. `updateEntities` derives phase from `((t % period)+period)%period`: off → charging (last .22 s, `o.charge`) → firing. `hitbox()` returns `null` unless `o.on`, so an idle beam is walk-through and takes no streak/close-call bookkeeping. Heights alternate (`this.laserFlip`, 15% chance to repeat) so the world reads as jump-duck-jump. Drawing: two emitter caps always visible, dashed centre line while charging, additive core + bloom while firing; a `laser` SFX plays on the off→on edge while on screen.
+
+## 18. Tidal Shore (World 10, `L.tide`)
+
+`tideUpdate(dt)` runs from `updateTwists` during `play` with a small state machine (`idle → warn → rise → hold → fall`), `tideLevel` 0→1, `waterY = GY - tideLevel*46`, and a 7-11 s idle gap. On `warn` it fires the banner + `wave` SFX, clears the lane, and calls `addPlat(p.x + speed*1.9)` — a `{kind:'plat', y:GY-58..63, w:560, h:20}` shelf plus a coin line. `spawnUpdate()` returns early whenever `tidePhase !== 'idle'`, so nothing blocks the run-up to the shelf; normal spawning resumes 1.2 s after the water drops.
+
+Platform physics live in `updatePlayer` (`this.L.tide` only): the pre-integration `prevY` is compared against the shelf top and, when falling through it, the player snaps to `o.y`, keeps `onGround`, and records `p.floor` (defaults to `GY` each frame) so shadows, land dust and footfall puffs stay on the shelf. Walking past the end simply drops them back to the sand. Water hurts once per surge (`tideHit`, and only above `tideLevel > .55`) via `damage('tide')` with a splash burst; standing on a 58 px shelf stays dry because the peak is 46 px.
+
+## 19. Save migration
+
+The retro finale moved from world 9 to world 11 to make room for the two new worlds. `ui.js` runs a one-time `save.v` migration: existing `stars[9]` / `best[9]` move to slot 11, `last === 9` becomes 11, then `v = 2`. `save.unlocked` needs no change — a player who had cleared Extinction already points at world 9, which is now Cyber Vault.

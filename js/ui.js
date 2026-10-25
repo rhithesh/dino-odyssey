@@ -6,6 +6,13 @@
   // ---------------- save data ----------------
   const save = Object.assign({ unlocked: 1, stars: {}, best: {}, last: 1, coins: 0, up: {} }, JSON.parse(localStorage.getItem('dr_save') || '{}'));
   const persist = () => localStorage.setItem('dr_save', JSON.stringify(save));
+  // Save v2: the retro finale moved to world 11 so two new worlds could slot in before it.
+  if (!save.v) {
+    if (save.stars && save.stars[9] !== undefined) { save.stars[11] = save.stars[9]; delete save.stars[9]; }
+    if (save.best && save.best[9] !== undefined) { save.best[11] = save.best[9]; delete save.best[9]; }
+    if (save.last === 9) save.last = 11;
+    save.v = 2; persist();
+  }
   const totalStars = () => Object.values(save.stars).reduce((a, b) => a + b, 0);
 
   // ---------------- coins & powers ----------------
@@ -26,6 +33,11 @@
   // ---------------- dinos ----------------
   const DINOS = DR.DINOS;
   const isOpen = D => DR.dinoUnlocked(D, save);
+  // DEV FLAG: every world is playable while the campaign is still being built.
+  // Flip to false for production — progression then follows save.unlocked again.
+  const UNLOCK_ALL = true;
+  // The retro world is always playable and never part of the unlock chain.
+  const levelOpen = L => UNLOCK_ALL || !!L.alwaysOpen || L.id <= save.unlocked;
   const dinoById = id => DINOS.find(d => d.id === id) || DINOS[0];
   // dinos[] = species already announced; dexNew[] = unlocked but not yet seen in the Dex. Old saves migrate silently.
   if (!Array.isArray(save.dinos)) save.dinos = DINOS.filter(isOpen).map(d => d.id);
@@ -79,17 +91,11 @@
       $('combo').innerHTML = `<span class="x">x${s.mult.toFixed(1)}</span>COMBO`;
       hudCache.mult = s.mult;
     }
-    $('twistTag').classList.toggle('on', s.phase === 'play' || s.phase === 'boss');
     const d = s.dash, dk = d ? Math.ceil(d.cd * 10) + (d.on ? 'on' : '') : 'none';
     if (dk !== hudCache.dash) {
       hudCache.dash = dk;
-      $('dashTag').classList.toggle('hidden', !d);
       if (d) {
         const ready = d.cd <= 0 && !d.on, k = d.on ? 1 : ready ? 1 : 1 - d.cd / d.max;
-        $('dashTag').classList.toggle('cd', !ready && !d.on);
-        $('dashTag').classList.toggle('on', d.on);
-        $('dashFill').style.transform = `scaleX(${k})`;
-        $('dashText').textContent = d.on ? '≫ GO!' : ready ? '≫ DASH · SHIFT' : `≫ ${d.cd.toFixed(1)}s`;
         $('btnDash').classList.toggle('ready', ready);
         $('padDashFill').style.height = (ready || d.on ? 0 : (1 - k) * 100) + '%';
       }
@@ -99,14 +105,20 @@
   // ---------------- screens ----------------
   const SCREENS = ['scrTitle', 'scrLevels', 'scrHelp', 'scrPause', 'scrResult', 'scrOver', 'scrDex', 'scrDino'];
   let screen = 'scrTitle';
+  // Screens with their own full-bleed blurred backdrop (they scroll, so the blur
+  // lives on #veil instead of on the scrolling element).
+  const VEILED = ['scrLevels', 'scrDex', 'scrDino', 'scrShop'];
   function show(id) {
     SCREENS.forEach(s => $(s).classList.toggle('hidden', s !== id));
     screen = id;
     $('hud').classList.toggle('hidden', !(id === null || id === 'scrPause'));
     $('touch').classList.toggle('hidden', !!id);
+    const listScreen = VEILED.includes(id);
+    $('veil').classList.toggle('hidden', !listScreen);
+    $('game').classList.toggle('blurred', listScreen);
   }
   function startDemo() {
-    const pool = LEVELS.filter(L => L.id <= save.unlocked && ['run'].includes(L.mode));
+    const pool = LEVELS.filter(L => levelOpen(L) && !L.alwaysOpen && ['run'].includes(L.mode));
     const L = pool[(Math.random() * pool.length) | 0] || LEVELS[0];
     current = null; document.body.classList.toggle('retro', !!L.retro);
     game.load(L, { demo: true, dino: save.dino });
@@ -128,7 +140,6 @@
     DR.Audio.init(); DR.Audio.resume();
     const L = LEVELS[id - 1]; current = L; save.last = id; persist();
     hudCache = {};
-    $('twistTag').textContent = L.twist.split('—')[0].trim();
     show(null);
     $('btnDash').classList.toggle('hidden', !dashOwned());
     document.body.classList.toggle('retro', !!L.retro);
@@ -141,7 +152,7 @@
     $('btnLevelsDex').innerHTML = `🦖 Running as <b>${D.short}</b> · <u>change</u>`;
     const grid = $('levelGrid'); grid.innerHTML = '';
     LEVELS.forEach(L => {
-      const locked = L.id > save.unlocked, st = save.stars[L.id] || 0;
+      const locked = !levelOpen(L), st = save.stars[L.id] || 0;
       const card = document.createElement('button');
       card.className = 'lvl' + (locked ? ' locked' : '');
       const thumb = DR.Backgrounds.thumb(L, 200, 56);
@@ -152,7 +163,7 @@
       info.innerHTML = `
         <div><div class="num">WORLD ${L.id}</div><div class="name">${L.name}</div><div class="twist">${L.twist.split('—')[0].trim()}</div></div>
         <div class="meta"><span class="stars">${[1, 2, 3].map(i => `<span class="${i <= st ? 'on' : ''}">★</span>`).join('')}</span>
-        ${L.boss ? '<span class="boss-tag">BOSS</span>' : ''}<span>${save.best[L.id] ? 'BEST ' + save.best[L.id].toLocaleString() : ''}</span></div>`;
+        <span>${save.best[L.id] ? 'BEST ' + save.best[L.id].toLocaleString() : ''}</span></div>`;
       card.appendChild(info);
       card.onclick = () => { if (locked) { DR.Audio.sfx('warn'); return; } DR.Audio.sfx('click'); startLevel(L.id); };
       grid.appendChild(card);
@@ -171,7 +182,8 @@
       const prevBest = save.best[r.level] || 0, isBest = r.score > prevBest;
       save.stars[r.level] = Math.max(save.stars[r.level] || 0, r.stars);
       if (isBest) save.best[r.level] = r.score;
-      save.unlocked = Math.max(save.unlocked, Math.min(LEVELS.length, r.level + 1));
+      // Only the frontier advances; clearing the always-open retro world must not unlock the campaign.
+      if (r.level === save.unlocked) save.unlocked = Math.min(LEVELS.length, r.level + 1);
       persist();
       const last = r.level === LEVELS.length;
       $('resTitle').textContent = last ? 'EXTINCTION AVERTED!' : L.boss ? 'BOSS DEFEATED!' : 'WORLD CLEAR!';

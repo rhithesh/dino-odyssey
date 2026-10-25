@@ -4,6 +4,7 @@
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const lerp = (a, b, t) => a + (b - a) * t;
   const ease = t => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
+  const RND = Math.random;
   const FONT = s => `900 ${s}px ui-monospace, "SF Mono", Menlo, monospace`;
 
   const STEP_PX = 9; // world px scrolled per walk frame (4 frames = one full stride)
@@ -29,6 +30,7 @@
       if (this.L) {
         const d = this.GY - oldGY;
         if (d && this.p) { this.p.y += d; for (const o of this.obs) o.y += d; for (const c of this.coins) c.y += d; if (this.boss) { this.boss.y += d; this.boss.ty += d; } }
+        this.waterY = this.GY - (this.tideLevel || 0) * 46;
         this.rebuild();
       }
     }
@@ -56,6 +58,7 @@
         closeN: 0, hits: 0, streak: 0, obs: [], coins: [], nextSpawn: L.speed[0] * 1.2, boss: null, bossDone: false,
         finishing: false, finish: null, banner: null, light: 0, lightT: 3 + Math.random() * 3, gustT: 7, gust: 0,
         shake: 0, hitstop: 0, slow: 1, zoom: demo ? 1 : 1.35, lb: demo ? 0 : 1, trail: [], runTime: 0, ceilA: L.mode === 'flip' ? 1 : 0,
+        tidePhase: 'idle', tideT: 7 + Math.random() * 3, tideLevel: 0, tideHit: false, waterY: this.GY, laserFlip: false,
       });
       this.p = { x: demo ? 50 : -40, y: this.GY, vy: 0, g: 1, onGround: true, duck: false, inv: 0, coyote: 0, buf: 0, hold: 0, rot: 0, dead: false, air: this.st.air, airT: 0, dash: 0, dashCd: 0 };
       this.phase = demo ? 'demo' : 'intro';
@@ -108,13 +111,13 @@
         this.fx.ring(p.x + 10, p.y - 9 * p.g, this.L.palette.accent, 22, .3);
       } else {
         p.vy = -this.st.jumpV; p.hold = this.st.hold; p.onGround = false; DR.Audio.sfx('jump');
-        this.fx.burst(p.x + 8, this.GY, 6, { color: this.L.palette.groundDark, speed: 60, angle: -Math.PI / 2, spread: 2, life: .35, grav: 400 });
+        this.fx.burst(p.x + 8, p.floor || this.GY, 6, { color: this.L.palette.groundDark, speed: 60, angle: -Math.PI / 2, spread: 2, life: .35, grav: 400 });
       }
     }
 
     // ---------------- main loop ----------------
     frame(now) {
-      let dt = Math.min(.033, (now - this.last) / 1000); this.last = now;
+      let dt = (now - this.last) / 1000; dt = Math.max(0, Math.min(.033, dt)); this.last = now;
       if (this.L && !this.paused) {
         this.time += dt;
         if (this.hitstop > 0) this.hitstop -= dt;
@@ -201,7 +204,7 @@
         this.lastStep = step;
         if ((step === 0 || step === 2) && p.onGround && this.mode === 'run' && !p.dead && this.speed > 20 && p.x > -10) {
           const heavy = ['ankylo', 'stego', 'trike', 'brachio', 'trex', 'spino'].includes(this.dinoId);
-          this.fx.burst(p.x + 15, this.GY - 1, heavy ? 5 : 3, { color: this.L.palette.groundDark, speed: heavy ? 45 : 30, angle: -Math.PI * .85, spread: 1.2, life: .3, grav: 200, size: heavy ? 2 : 1.5 });
+          this.fx.burst(p.x + 15, (p.floor || this.GY) - 1, heavy ? 5 : 3, { color: this.L.palette.groundDark, speed: heavy ? 45 : 30, angle: -Math.PI * .85, spread: 1.2, life: .3, grav: 200, size: heavy ? 2 : 1.5 });
           if (heavy) this.shake = Math.max(this.shake, .8); // big dinos make the ground thud
         }
       }
@@ -239,21 +242,35 @@
       let g = 2600;
       if (p.vy < 0 && this.keys.jump && p.hold > 0) { g *= .42; p.hold -= dt; } else p.hold = 0;
       if (this.keys.duck && !p.onGround) g *= this.st.fall;
+      const prevY = p.y;
       p.vy += g * dt; p.y += p.vy * dt;
       const pit = this.pitUnder(p.x + 10);
       const was = p.onGround;
+      p.floor = GY;
       if (p.y >= GY && !pit) { p.y = GY; p.vy = 0; p.onGround = true; if (!was) this.land(); }
       else if (p.y > GY && pit) {
         p.onGround = false;
         if (p.y > GY + 8 && this.perks.lava > 0 && p.inv <= 0 && !this.demo) { this.perks.lava--; p.vy = -720; p.y = GY + 8; this.perkFx('HOT HOP!', '#ff8a00'); }
         else if (p.y > GY + 8) { this.damage('lava'); p.vy = -720; p.y = GY + 8; this.fx.burst(p.x + 10, GY, 18, { color: ['#ff4a00', '#ffd000', '#ff8a00'], speed: 160, life: .6, glow: true }); }
       } else p.onGround = false;
+      // Tidal Shore: raised shelves are standable — land on top, ride it, drop off the end.
+      if (this.L.tide && p.vy >= 0 && !p.onGround) {
+        const px = p.x + 10;
+        for (const o of this.obs) {
+          if (o.kind !== 'plat' || px < o.x + 1 || px > o.x + o.w - 1) continue;
+          if (prevY <= o.y + 2 && p.y >= o.y) {
+            p.y = o.y; p.vy = 0; p.onGround = true; p.floor = o.y;
+            if (!was) this.land();
+            break;
+          }
+        }
+      }
       if (p.onGround) { p.coyote = this.st.coyote; p.duck = this.keys.duck; p.air = this.st.air; p.airT = 0; } else { p.coyote -= dt; p.airT += dt; }
     }
     land() {
       const p = this.p;
       if (this.mode === 'flip') { this.fx.burst(p.x + 10, p.y, 5, { color: '#fff', speed: 50, grav: 0, life: .25, size: 1 }); return; }
-      this.fx.burst(p.x + 10, this.GY, 4, { color: this.L.palette.groundDark, speed: 50, angle: -Math.PI / 2, spread: 2.5, life: .3 });
+      this.fx.burst(p.x + 10, p.floor || this.GY, 4, { color: this.L.palette.groundDark, speed: 50, angle: -Math.PI / 2, spread: 2.5, life: .3 });
     }
 
     playerBox() {
@@ -323,6 +340,7 @@
 
     updateTwists(dt) {
       const L = this.L;
+      if (L.tide && this.phase === 'play') this.tideUpdate(dt);
       this.ceilA += ((this.mode === 'flip' ? 1 : 0) - this.ceilA) * Math.min(1, dt * 4);
       // lightning in the dark
       if (this.darkOn && this.phase !== 'intro') {
@@ -339,6 +357,67 @@
         this.gust = Math.max(0, this.gust - dt);
         this.fx.wind = this.gust > 0 ? -60 : 0;
       }
+    }
+
+    // Tidal Shore: a surge floods the beach; only the raised shelf stays dry.
+    tideUpdate(dt) {
+      const P = this.L.palette, p = this.p;
+      if (this.tidePhase === 'idle') {
+        this.tideT -= dt;
+        if (this.tideT <= 0) {
+          this.tidePhase = 'warn'; this.tideT = 1.6; this.tideHit = false;
+          this.showBanner('⚠ TSUNAMI', 'GET TO HIGH GROUND', P.accent, 1.6);
+          DR.Audio.sfx('wave'); this.shake = Math.max(this.shake, 3);
+          const px = p.x + this.speed * 1.9; // reaches the player shortly after the rise starts
+          this.obs = this.obs.filter(o => o.x + (o.w || 0) < px - 70 || o.x > px + 620);
+          this.addPlat(px);
+          this.nextSpawn = Math.max(this.nextSpawn, this.speed * 2.2);
+        }
+      } else if (this.tidePhase === 'warn') {
+        this.tideT -= dt;
+        if (this.tideT <= 0) { this.tidePhase = 'rise'; this.tideT = .9; }
+      } else if (this.tidePhase === 'rise') {
+        this.tideT -= dt; this.tideLevel = 1 - Math.max(0, this.tideT) / .9;
+        if (this.tideT <= 0) { this.tidePhase = 'hold'; this.tideT = .7; this.tideLevel = 1; }
+      } else if (this.tidePhase === 'hold') {
+        this.tideT -= dt;
+        if (this.tideT <= 0) { this.tidePhase = 'fall'; this.tideT = 1.2; }
+      } else if (this.tidePhase === 'fall') {
+        this.tideT -= dt; this.tideLevel = Math.max(0, this.tideT) / 1.2;
+        if (this.tideT <= 0) {
+          this.tidePhase = 'idle'; this.tideT = 7 + Math.random() * 4; this.tideLevel = 0;
+          this.nextSpawn = this.speed * 1.2;
+        }
+      }
+      this.tideLevel = clamp(this.tideLevel, 0, 1);
+      this.waterY = this.GY - this.tideLevel * 46;
+      // only once the water is genuinely deep — early rise is just a warning
+      if (this.tideLevel > .55 && !this.tideHit && p.y > this.waterY + 2 && !this.demo) {
+        if (this.damage('tide')) {
+          this.tideHit = true;
+          this.fx.burst(p.x + 10, this.waterY, 28, { color: ['#bfefff', '#7df9ff', '#ffffff'], speed: 175, angle: -Math.PI / 2, spread: 2.2, life: .7, glow: true });
+          this.fx.doFlash(.35, '#7df9ff');
+        }
+      }
+      if (this.tideLevel > .3 && RND() < .4) this.fx.burst(this.W + 10, this.waterY + RND() * 6, 1, { color: ['#bfefff', '#fff'], speed: 70, angle: Math.PI, spread: .5, grav: 140, life: .6, size: 2, glow: true });
+    }
+    drawTide(ctx) {
+      const lvl = this.tideLevel || 0;
+      if (lvl <= .01) return;
+      const wy = this.waterY, W = this.W, H = this.H;
+      const g = ctx.createLinearGradient(0, wy, 0, H);
+      g.addColorStop(0, 'rgba(110,225,235,.45)');
+      g.addColorStop(.45, 'rgba(30,140,180,.5)');
+      g.addColorStop(1, 'rgba(4,32,64,.72)');
+      ctx.fillStyle = g; ctx.fillRect(-20, wy, W + 40, H - wy + 20);
+      ctx.globalCompositeOperation = 'lighter';
+      for (let x = -16; x < W + 16; x += 3) {
+        const hh = 2 + Math.sin(x * .18 + this.time * 7) * 1.6;
+        ctx.fillStyle = 'rgba(225,255,255,.75)';
+        ctx.fillRect(x, wy - hh + Math.sin(x * .5 + this.time * 4), 2, hh);
+      }
+      ctx.fillStyle = 'rgba(0,120,190,.12)'; ctx.fillRect(-20, wy, W + 40, H - wy + 20);
+      ctx.globalCompositeOperation = 'source-over';
     }
 
     // Title-screen autopilot.
@@ -377,6 +456,7 @@
       if (this.finish) this.drawFinish(ctx);
       if (this.boss) this.drawBoss(ctx);
       this.drawPlayer(ctx);
+      if (this.L.tide) this.drawTide(ctx);
       this.fx.drawParts(ctx);
       ctx.font = '7px monospace'; this.fx.drawWeather(ctx, this.time);
       if (this.gust > 0) { ctx.fillStyle = `rgba(230,245,255,${Math.min(.55, this.gust * .4) * Math.min(1, (2.6 - this.gust) * 3)})`; ctx.fillRect(-20, -20, W + 40, H + 40); }
@@ -404,11 +484,12 @@
       const flipped = this.mode === 'flip' && p.g < 0;
       // shadow
       if (this.mode !== 'swim' && !flipped && !p.dead) {
-        const h = clamp((this.GY - p.y) / 80, 0, 1);
-        ctx.fillStyle = `rgba(0,0,0,${.28 * (1 - h)})`; ctx.fillRect(p.x + 4 + h * 3, this.GY - 1, 14 - h * 6, 2);
+        const fy = p.floor || this.GY;
+        const h = clamp((fy - p.y) / 80, 0, 1);
+        ctx.fillStyle = `rgba(0,0,0,${.28 * (1 - h)})`; ctx.fillRect(p.x + 4 + h * 3, fy - 1, 14 - h * 6, 2);
       }
       // Walk cycle advances with distance scrolled, so legs keep pace with the ground.
-      const runFrame = Math.floor(this.scroll / STEP_PX) % S.dino.run.length;
+      const nFrames = S.dino.run.length, runFrame = ((Math.floor(this.scroll / STEP_PX) % nFrames) + nFrames) % nFrames;
       let img;
       if (p.dead) img = this.L.retro ? S.dino.stand : S.dinoHurt.stand;
       else if (p.duck) img = S.dino.duck[runFrame];

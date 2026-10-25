@@ -196,6 +196,85 @@
         },
       };
     },
+    // Server hall: racks, status LEDs, a vault door and a scanning light bar.
+    vault(P, W, H, GY, LW) {
+      const s = mk(W, H), g = s.getContext('2d'); sky(g, W, H, P.skyTop, P.skyMid, P.skyBot, 12);
+      g.fillStyle = 'rgba(37,232,255,.10)'; for (let x = 24; x < W; x += 74) g.fillRect(x, 10, 30, 2);
+      // ceiling truss + conduit run so the hall has a top
+      g.fillStyle = '#0a1626'; g.fillRect(0, 0, W, 14);
+      g.fillStyle = P.far; for (let x = 0; x < W; x += 46) g.fillRect(x, 0, 3, 12);
+      g.fillStyle = 'rgba(37,232,255,.16)'; g.fillRect(0, 12, W, 1);
+      g.fillStyle = P.far; g.fillRect(0, H * .26 | 0, W, 5);
+      for (let x = 12; x < W; x += 58) { g.fillStyle = P.far; g.fillRect(x, (H * .26 | 0) + 5, 3, 10); g.fillStyle = 'rgba(255,45,111,.35)'; g.fillRect(x + 1, (H * .26 | 0) + 7, 1, 1); }
+      const dx = W * .62 | 0, dy = GY - 96;
+      g.fillStyle = 'rgba(8,20,36,.88)'; g.fillRect(dx, dy, 76, 96);
+      g.strokeStyle = 'rgba(37,232,255,.3)'; g.lineWidth = 2; g.strokeRect(dx, dy, 76, 96);
+      g.fillStyle = 'rgba(37,232,255,.45)'; g.fillRect(dx + 36, dy + 8, 4, 80); g.fillRect(dx + 8, dy + 46, 60, 4);
+      g.fillStyle = 'rgba(255,45,111,.6)'; g.fillRect(dx + 34, dy + 44, 8, 8);
+      const far = mk(LW, H), fg = far.getContext('2d'), R1 = rng(81);
+      for (let x = 0; x < LW;) {
+        const w = 16 + R1() * 26 | 0, h = 96 + R1() * 120 | 0;
+        fg.fillStyle = P.far; fg.fillRect(x, GY - h, w, h);
+        fg.fillStyle = 'rgba(37,232,255,.18)'; for (let y = GY - h + 5; y < GY - 6; y += 7) fg.fillRect(x + 2, y, w - 4, 1);
+        x += w + 5 + (R1() * 9 | 0);
+      }
+      const mid = mk(LW, H), mg = mid.getContext('2d'), R2 = rng(82);
+      for (let x = 0; x < LW;) {
+        const w = 22 + R2() * 30 | 0, h = 138 + R2() * 110 | 0, top = GY - h;
+        mg.fillStyle = P.mid; mg.fillRect(x, top, w, h);
+        mg.fillStyle = 'rgba(0,0,0,.45)'; for (let y = top + 4; y < GY - 4; y += 5) mg.fillRect(x + 2, y, w - 4, 2);
+        mg.fillStyle = R2() < .5 ? P.line : 'rgba(255,45,111,.75)';
+        for (let y = top + 6; y < GY - 8; y += 9) if (R2() < .5) mg.fillRect(x + 3, y, 2, 2);
+        mg.fillStyle = 'rgba(37,232,255,.35)'; mg.fillRect(x + w - 3, top + 3, 1, h - 6);
+        x += w + 4 + (R2() * 8 | 0);
+      }
+      const near = mk(LW, H), ng = near.getContext('2d');
+      const cy = GY - 250;
+      ng.fillStyle = '#08121f'; ng.fillRect(0, cy, LW, 8);
+      ng.fillStyle = 'rgba(37,232,255,.22)'; ng.fillRect(0, cy + 8, LW, 1);
+      for (let x = 0; x < LW; x += 120) { ng.fillStyle = '#08121f'; ng.fillRect(x + 20, cy, 4, 250); }
+      for (let x = 0; x < LW; x += 46) { ng.fillStyle = P.near; ng.fillRect(x, GY - 26, 3, 26); ng.fillRect(x, GY - 26, 16, 2); }
+      ng.fillStyle = 'rgba(37,232,255,.25)'; for (let x = 6; x < LW; x += 46) ng.fillRect(x, GY - 24, 2, 1);
+      return {
+        sky: s, layers: [{ img: far, speed: .07 }, { img: mid, speed: .2 }, { img: near, speed: .55 }],
+        extra(ctx, t, scroll) {
+          const y = ((t * 26) % Math.max(40, GY - 30)) + 16;
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.fillStyle = 'rgba(37,232,255,.05)'; ctx.fillRect(0, y, W, 10);
+          ctx.fillStyle = 'rgba(37,232,255,.35)'; ctx.fillRect(0, y + 4, W, 1);
+          ctx.fillStyle = `rgba(255,45,111,${.10 + .06 * Math.sin(t * 3)})`; ctx.fillRect(dx, dy, 76, 96);
+          ctx.globalCompositeOperation = 'source-over';
+        },
+      };
+    },
+    // Storm-lit beach: amber horizon, rolling sea, dark headlands, foam at the shoreline.
+    shore(P, W, H, GY, LW) {
+      const s = mk(W, H), g = s.getContext('2d'); sky(g, W, H, P.skyTop, P.skyMid, P.skyBot, 16);
+      disc(g, W * .72 | 0, GY - 78, 20, P.sun);
+      g.fillStyle = mix(P.skyBot, P.mid, .55); g.fillRect(0, GY - 44, W, 26);
+      g.fillStyle = P.mid; g.fillRect(0, GY - 18, W, 18);
+      const R0 = rng(91);
+      for (let i = 0; i < 90; i++) { const x = R0() * W | 0, y = GY - 42 + R0() * 30 | 0; g.fillStyle = `rgba(255,255,255,${.04 + R0() * .1})`; g.fillRect(x, y, 2 + R0() * 7 | 0, 1); }
+      const far = mk(LW, H), fg = far.getContext('2d');
+      ridge(fg, LW, H, GY - 40, 30, P.far, 93, { step: 3, flat: 3, harmonics: [1, 3, 5] });
+      const mid = mk(LW, H), mg = mid.getContext('2d'), R = rng(94);
+      for (let i = 0; i < 14; i++) { const x = R() * LW | 0, w = 8 + R() * 16 | 0, h = 6 + R() * 12 | 0; mg.fillStyle = P.mid; mg.fillRect(x, GY - h, w, h); mg.fillStyle = 'rgba(255,255,255,.1)'; mg.fillRect(x, GY - h, w, 1); }
+      const near = mk(LW, H), ng = near.getContext('2d'), R2 = rng(95);
+      for (let i = 0; i < 26; i++) { const x = R2() * LW | 0, hh = 8 + R2() * 12 | 0; ng.fillStyle = P.near; for (let y = 0; y < hh; y++) { const w = Math.max(1, Math.round((hh - y) / 4)); ng.fillRect(x, GY - y, w, 1); } }
+      return {
+        sky: s, layers: [{ img: far, speed: .04 }, { img: mid, speed: .12 }, { img: near, speed: .4 }],
+        extra(ctx, t, scroll) {
+          ctx.globalCompositeOperation = 'lighter';
+          const lap = .5 + .5 * Math.sin(t * 1.1);
+          ctx.fillStyle = `rgba(190,240,255,${.10 + .10 * lap})`;
+          for (let x = 0; x < W; x += 3) {
+            const y = GY - 3 - Math.sin(x * .13 + t * 2) * 2 - lap * 3;
+            ctx.fillRect(x, y, 3, 1);
+          }
+          ctx.globalCompositeOperation = 'source-over';
+        },
+      };
+    },
     // The Chrome "no internet" page: flat paper sky, pixel clouds, one thin horizon.
     retro(P, W, H, GY, LW) {
       const s = mk(W, H), g = s.getContext('2d');
@@ -243,6 +322,17 @@
     if (L.bg === 'city') { g.fillStyle = 'rgba(255,42,138,.25)'; for (let x = 0; x < LW; x += 40) g.fillRect(x, 8, 18, 2); g.fillStyle = 'rgba(0,240,255,.12)'; g.fillRect(0, 3, LW, 2); }
     if (L.bg === 'space') { g.fillStyle = P.groundDark; for (let x = 0; x < LW; x += 24) g.fillRect(x, 2, 1, gh); g.fillStyle = P.accent; for (let x = 12; x < LW; x += 48) g.fillRect(x, 5, 3, 1); }
     if (L.bg === 'glitch') { g.clearRect(0, 2, LW, gh); g.fillStyle = P.ground; g.fillRect(0, 2, LW, gh); }
+    if (L.bg === 'vault') {
+      g.clearRect(0, 2, LW, gh); g.fillStyle = P.ground; g.fillRect(0, 2, LW, gh);
+      g.fillStyle = 'rgba(0,0,0,.5)'; for (let x = 0; x < LW; x += 34) g.fillRect(x, 2, 1, gh);
+      g.fillStyle = 'rgba(37,232,255,.10)'; for (let x = 12; x < LW; x += 34) g.fillRect(x, 8, 12, 1);
+      g.fillStyle = P.accent2; for (let x = 26; x < LW; x += 34) g.fillRect(x, 6, 1, 1);
+    }
+    if (L.bg === 'shore') {
+      g.clearRect(0, 2, LW, gh); g.fillStyle = P.ground; g.fillRect(0, 2, LW, gh);
+      g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(0, 2, LW, 1);
+      g.fillStyle = P.groundDark; for (let x = 0; x < LW; x += 26) if (R() < .5) g.fillRect(x + (R() * 20 | 0), 6 + (R() * 6 | 0), 2, 1);
+    }
     return c;
   }
 
