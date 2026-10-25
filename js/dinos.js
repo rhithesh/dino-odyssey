@@ -6,16 +6,18 @@ DR.DINO_BASE = {
   hearts: 3, jumpV: 600, hold: .2, coyote: .09, buffer: .13, inv: 1.6, magnet: 3, close: 6, comboDiv: 6,
   swimThrust: 1250, sinkIdle: 560, speedMul: 1, maxSpeedMul: 1, penaltyRec: .4, light: 0, coinMul: 1, bossMul: 1,
   fallerShield: 0, lavaShield: 0, breaker: 0,
+  // shop-driven (see upgrades.js)
+  fall: 3.2, air: 0, dashLvl: 0, dashCd: 0, dashDur: 0, coinBonus: 0,
 };
 
 DR.DINOS = [
   {
-    id: 'compy', name: 'COMPSOGNATHUS', short: 'COMPY', era: 'Late Jurassic', fact: '1 m long, 3 kg. Chicken-sized.',
-    perk: 'The original. No tricks.', unlock: { start: true }, classic: true, stats: {},
+    id: 'compy', name: 'COMPSOGNATHUS', short: 'COMPY', era: 'Late Jurassic',
+    unlock: { start: true }, classic: true, stats: {},
   },
   {
-    id: 'hypsi', name: 'HYPSILOPHODON', short: 'HYPSI', era: 'Early Cretaceous', fact: '2 m. Built to sprint.',
-    perk: '+5% run speed', unlock: { stars: 3 }, stats: { speedMul: 1.05 },
+    id: 'hypsi', name: 'HYPSILOPHODON', short: 'HYPSI', era: 'Early Cretaceous',
+    unlock: { stars: 3 }, stats: { speedMul: 1.05 },
     colors: { '#': '#6dbb4a', d: '#3d7a2a', b: '#d6efa0', c: '#f0c040', o: '#0e1a08', w: '#fff8e0' },
     lx: 5, ox: 0,
     body: [
@@ -45,8 +47,8 @@ DR.DINOS = [
     ],
   },
   {
-    id: 'raptor', name: 'VELOCIRAPTOR', short: 'RAPTOR', era: 'Late Cretaceous', fact: '2 m, 20 kg, feathered, sickle-clawed.',
-    perk: 'Shrugs off hits 2× faster', unlock: { world: 1 }, stats: { penaltyRec: .8 },
+    id: 'raptor', name: 'VELOCIRAPTOR', short: 'RAPTOR', era: 'Late Cretaceous',
+    unlock: { world: 1 }, stats: { penaltyRec: .8 },
     colors: { '#': '#c9763a', d: '#6b3a1f', b: '#f0c890', c: '#e04a2a', o: '#1a0a04', w: '#fff4dc' },
     lx: 5, ox: 0, claw: true,
     body: [
@@ -76,8 +78,8 @@ DR.DINOS = [
     ],
   },
   {
-    id: 'galli', name: 'GALLIMIMUS', short: 'GALLI', era: 'Late Cretaceous', fact: '6 m ostrich-mimic. 60 km/h.',
-    perk: '+8% top speed', unlock: { stars: 6 }, stats: { maxSpeedMul: 1.08 },
+    id: 'galli', name: 'GALLIMIMUS', short: 'GALLI', era: 'Late Cretaceous',
+    unlock: { stars: 6 }, stats: { maxSpeedMul: 1.08 },
     colors: { '#': '#d9c38a', d: '#8c7448', b: '#f6eed6', c: '#e8902a', o: '#20160a', w: '#fff' },
     lx: 5, ox: 0, tall: true,
     body: [
@@ -107,8 +109,8 @@ DR.DINOS = [
     ],
   },
   {
-    id: 'para', name: 'PARASAUROLOPHUS', short: 'PARA', era: 'Late Cretaceous', fact: '10 m. Its hollow crest trumpeted.',
-    perk: 'Bigger close-call window', unlock: { world: 2 }, stats: { close: 9 },
+    id: 'para', name: 'PARASAUROLOPHUS', short: 'PARA', era: 'Late Cretaceous',
+    unlock: { world: 2 }, stats: { close: 9 },
     colors: { '#': '#5a8fd6', d: '#2f5a9a', b: '#cfe0f5', c: '#ff7a3d', o: '#0a1630', w: '#fff' },
     lx: 5, ox: 0,
     body: [
@@ -140,8 +142,8 @@ DR.DINOS = [
     ],
   },
   {
-    id: 'dilo', name: 'DILOPHOSAURUS', short: 'DILO', era: 'Early Jurassic', fact: '7 m. Twin bony crests.',
-    perk: 'Bigger light in the dark', unlock: { stars: 9 }, stats: { light: 22 },
+    id: 'dilo', name: 'DILOPHOSAURUS', short: 'DILO', era: 'Early Jurassic',
+    unlock: { stars: 9 }, stats: { light: 22 },
     colors: { '#': '#a3cf3f', d: '#4d7a1f', b: '#eef7b0', c: '#ff3b3b', o: '#1a0606', w: '#fff' },
     lx: 5, ox: 0,
     body: [
@@ -172,8 +174,8 @@ DR.DINOS = [
     ],
   },
   {
-    id: 'pachy', name: 'PACHYCEPHALOSAURUS', short: 'PACHY', era: 'Late Cretaceous', fact: '4.5 m. 25 cm thick skull dome.',
-    perk: 'Headbutts 1 falling rock per run', unlock: { world: 3 }, stats: { fallerShield: 1 },
+    id: 'pachy', name: 'PACHYCEPHALOSAURUS', short: 'PACHY', era: 'Late Cretaceous',
+    unlock: { world: 3 }, stats: { fallerShield: 1 },
     colors: { '#': '#a86a3c', d: '#6a3e1e', b: '#e8c49a', c: '#f0d7b0', o: '#1a0c04', w: '#fffaf0' },
     lx: 5, ox: 0,
     body: [
@@ -204,8 +206,8 @@ DR.DINOS = [
     ],
   },
   {
-    id: 'iguano', name: 'IGUANODON', short: 'IGUANO', era: 'Early Cretaceous', fact: '10 m. Spiked thumbs.',
-    perk: 'Stronger coin magnet', unlock: { stars: 12 }, stats: { magnet: 9 },
+    id: 'iguano', name: 'IGUANODON', short: 'IGUANO', era: 'Early Cretaceous',
+    unlock: { stars: 12 }, stats: { magnet: 9 },
     colors: { '#': '#5f8a4e', d: '#36552a', b: '#c9dca0', c: '#8fb86a', o: '#0a1406', w: '#f4f0dc' },
     lx: 5, ox: 0,
     body: [
@@ -235,8 +237,8 @@ DR.DINOS = [
     ],
   },
   {
-    id: 'carno', name: 'CARNOTAURUS', short: 'CARNO', era: 'Late Cretaceous', fact: '8 m. Bull horns, tiny arms.',
-    perk: 'Bounces off lava once per run', unlock: { world: 4 }, stats: { lavaShield: 1 },
+    id: 'carno', name: 'CARNOTAURUS', short: 'CARNO', era: 'Late Cretaceous',
+    unlock: { world: 4 }, stats: { lavaShield: 1 },
     colors: { '#': '#c0392b', d: '#5a1410', b: '#f0a890', c: '#ffcf4a', o: '#ffe066', w: '#fff4e8' },
     lx: 5, ox: 0,
     body: [
@@ -267,8 +269,8 @@ DR.DINOS = [
     ],
   },
   {
-    id: 'allo', name: 'ALLOSAURUS', short: 'ALLO', era: 'Late Jurassic', fact: '9 m. Jurassic apex predator.',
-    perk: 'Combo builds faster', unlock: { stars: 15 }, stats: { comboDiv: 5 },
+    id: 'allo', name: 'ALLOSAURUS', short: 'ALLO', era: 'Late Jurassic',
+    unlock: { stars: 15 }, stats: { comboDiv: 5 },
     colors: { '#': '#c4a868', d: '#6f5b2e', b: '#f0e4c0', c: '#d94a2a', o: '#1a1004', w: '#fff' },
     lx: 5, ox: 0,
     body: [
@@ -299,8 +301,8 @@ DR.DINOS = [
     ],
   },
   {
-    id: 'stego', name: 'STEGOSAURUS', short: 'STEGO', era: 'Late Jurassic', fact: '9 m. Brain the size of a walnut.',
-    perk: 'Longer invincibility after hits', unlock: { world: 5 }, stats: { inv: 2.0 },
+    id: 'stego', name: 'STEGOSAURUS', short: 'STEGO', era: 'Late Jurassic',
+    unlock: { world: 5 }, stats: { inv: 2.0 },
     colors: { '#': '#6aa06a', d: '#3a6a3a', b: '#cfe6b8', c: '#e8663a', o: '#0a1a0a', w: '#fff4e0' },
     plan: 'quad', bx: 6, fx: 16, ox: 2,
     body: [
@@ -327,8 +329,8 @@ DR.DINOS = [
     ],
   },
   {
-    id: 'ankylo', name: 'ANKYLOSAURUS', short: 'ANKY', era: 'Late Cretaceous', fact: '8 m living tank. Club tail.',
-    perk: '4 hearts, but heavier jump', unlock: { stars: 18 }, stats: { hearts: 4, jumpV: 565 },
+    id: 'ankylo', name: 'ANKYLOSAURUS', short: 'ANKY', era: 'Late Cretaceous',
+    unlock: { stars: 18 }, stats: { hearts: 4, jumpV: 565 },
     colors: { '#': '#8a7a5a', d: '#4e4430', b: '#d8c8a0', c: '#c8b07a', o: '#140e04', w: '#f0ead0' },
     plan: 'quad', bx: 6, fx: 15, ox: 2,
     body: [
@@ -354,8 +356,8 @@ DR.DINOS = [
     ],
   },
   {
-    id: 'trike', name: 'TRICERATOPS', short: 'TRIKE', era: 'Late Cretaceous', fact: '9 m. Three horns, giant frill.',
-    perk: 'Smashes 1 obstacle per run', unlock: { world: 6 }, stats: { breaker: 1 },
+    id: 'trike', name: 'TRICERATOPS', short: 'TRIKE', era: 'Late Cretaceous',
+    unlock: { world: 6 }, stats: { breaker: 1 },
     colors: { '#': '#6a8fb0', d: '#3a5a7a', b: '#cfe0ee', c: '#e06030', o: '#0a1220', w: '#fff8e8' },
     plan: 'quad', bx: 5, fx: 14, ox: 1,
     body: [
@@ -381,8 +383,8 @@ DR.DINOS = [
     ],
   },
   {
-    id: 'spino', name: 'SPINOSAURUS', short: 'SPINO', era: 'Late Cretaceous', fact: '15 m. Swam rivers, sail-backed.',
-    perk: 'Stronger swim stroke', unlock: { stars: 20 }, stats: { swimThrust: 1450 },
+    id: 'spino', name: 'SPINOSAURUS', short: 'SPINO', era: 'Late Cretaceous',
+    unlock: { stars: 20 }, stats: { swimThrust: 1450 },
     colors: { '#': '#4f7a8f', d: '#2a4a5a', b: '#c8dde4', c: '#ff6a3d', o: '#0a1418', w: '#fff' },
     lx: 5, ox: 0,
     body: [
@@ -414,8 +416,8 @@ DR.DINOS = [
     ],
   },
   {
-    id: 'ptera', name: 'PTERANODON', short: 'PTERA', era: 'Late Cretaceous', fact: '7 m wingspan. Not a dinosaur!*',
-    perk: 'Floatier jumps', unlock: { stars: 21 }, stats: { hold: .3 },
+    id: 'ptera', name: 'PTERANODON', short: 'PTERA', era: 'Late Cretaceous',
+    unlock: { stars: 21 }, stats: { hold: .3 },
     colors: { '#': '#e6d9c3', d: '#8a5a4a', b: '#fff6e8', c: '#e04a3a', o: '#1a0a06', w: '#ffcf4a' },
     lx: 5, ox: 0,
     body: [
@@ -445,8 +447,8 @@ DR.DINOS = [
     ],
   },
   {
-    id: 'micro', name: 'MICRORAPTOR', short: 'MICRO', era: 'Early Cretaceous', fact: '1 m. Four feathered wings.',
-    perk: 'More forgiving jump timing', unlock: { world: 7 }, stats: { coyote: .14, buffer: .18 },
+    id: 'micro', name: 'MICRORAPTOR', short: 'MICRO', era: 'Early Cretaceous',
+    unlock: { world: 7 }, stats: { coyote: .14, buffer: .18 },
     colors: { '#': '#2a2f4a', d: '#141828', b: '#5a6a9a', c: '#4fb0ff', o: '#ffe600', w: '#e8f0ff' },
     lx: 5, ox: 0,
     body: [
@@ -475,8 +477,8 @@ DR.DINOS = [
     ],
   },
   {
-    id: 'trex', name: 'TYRANNOSAURUS REX', short: 'T-REX', era: 'Late Cretaceous', fact: '12 m, 9 tonnes. The king.',
-    perk: '2× score from boss hits', unlock: { world: 8 }, stats: { bossMul: 2 },
+    id: 'trex', name: 'TYRANNOSAURUS REX', short: 'T-REX', era: 'Late Cretaceous',
+    unlock: { world: 8 }, stats: { bossMul: 2 },
     colors: { '#': '#6b7040', d: '#3a3e20', b: '#d4c890', c: '#a83a2a', o: '#ffd000', w: '#fffaf0' },
     lx: 5, ox: 0,
     body: [
@@ -507,8 +509,8 @@ DR.DINOS = [
     ],
   },
   {
-    id: 'mosa', name: 'MOSASAURUS', short: 'MOSA', era: 'Late Cretaceous', fact: '15 m sea lizard. Not a dinosaur!*',
-    perk: 'Floats when idle underwater', unlock: { stars: 24 }, stats: { sinkIdle: 200 },
+    id: 'mosa', name: 'MOSASAURUS', short: 'MOSA', era: 'Late Cretaceous',
+    unlock: { stars: 24 }, stats: { sinkIdle: 200 },
     colors: { '#': '#2f6f8f', d: '#1a3f55', b: '#d0e8f0', c: '#4fd0c0', o: '#ffea70', w: '#ffffff' },
     plan: 'flipper', lx: 5, ox: 0,
     body: [
@@ -538,8 +540,8 @@ DR.DINOS = [
     ],
   },
   {
-    id: 'brachio', name: 'BRACHIOSAURUS', short: 'BRACHIO', era: 'Late Jurassic', fact: '22 m tall, 35 tonnes. Gentle giant.',
-    perk: '2× coins, but only 1 heart', unlock: { allStars: true }, stats: { coinMul: 2, hearts: 1 },
+    id: 'brachio', name: 'BRACHIOSAURUS', short: 'BRACHIO', era: 'Late Jurassic',
+    unlock: { allStars: true }, stats: { coinMul: 2, hearts: 1 },
     colors: { '#': '#8fa8a0', d: '#5a7068', b: '#dfe8dc', c: '#b8cfc4', o: '#0e1814', w: '#fff' },
     plan: 'quad', bx: 4, fx: 13, ox: 0, tallFront: true,
     body: [
@@ -583,3 +585,17 @@ DR.dinoHint = function (D) {
   const u = D.unlock;
   return u.world ? `CLEAR WORLD ${u.world}` : u.stars ? `EARN ${u.stars} ★` : u.allStars ? '3★ EVERY WORLD' : '';
 };
+
+// ---------------- power tiers ----------------
+// Later unlocks are stronger: they start with more power bars (see upgrades.js) and their bars cost a bit more.
+DR.DINO_TIER = {
+  compy: 1, hypsi: 1, raptor: 1,
+  galli: 2, para: 2, dilo: 2, pachy: 2,
+  iguano: 3, carno: 3, allo: 3, stego: 3,
+  ankylo: 4, trike: 4, spino: 4, ptera: 4, micro: 4,
+  trex: 5, mosa: 5, brachio: 5,
+};
+DR.dinoTier = id => DR.DINO_TIER[id] || 1;
+DR.dinoRank = id => DR.dinoTier(id) - 1;
+// Power rating shown in the UI (1..5 stars).
+DR.powerStars = id => '★'.repeat(DR.dinoTier(id)) + '☆'.repeat(5 - DR.dinoTier(id));

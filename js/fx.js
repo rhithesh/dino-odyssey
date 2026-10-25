@@ -123,9 +123,9 @@
       }
       ctx.drawImage(this.dark, 0, 0);
     }
-    post(ctx, grade) {
+    post(ctx, grade, vig = 1) {
       if (grade) { ctx.fillStyle = grade; ctx.fillRect(0, 0, this.W, this.H); }
-      ctx.drawImage(this.vig, 0, 0);
+      if (vig > 0) { ctx.globalAlpha = vig; ctx.drawImage(this.vig, 0, 0); ctx.globalAlpha = 1; }
       if (this.flash > 0) { ctx.globalAlpha = Math.min(1, this.flash); ctx.fillStyle = this.flashColor; ctx.fillRect(0, 0, this.W, this.H); ctx.globalAlpha = 1; }
     }
   }

@@ -173,6 +173,7 @@
           this.fx.burst(o.x + o.w / 2, o.y + o.h / 2, 24, { color: [this.L.palette.obstacle, '#fff'], speed: 180, life: .7, size: 2 });
           this.obs.splice(i, 1); continue;
         } else if (this.damage(o.kind)) { o.hit = true; if (o.kind === 'proj' || o.kind === 'faller') o.x = -999; }
+        else o.grazed = true; // overlapped while invincible (i-frames / dash): no free combo for it
       } else if (hb && !o.passed) {
         if (hb.x < pb.x + pb.w + 4 && hb.x + hb.w > pb.x - 4) {
           const gap = Math.max(hb.y - (pb.y + pb.h), pb.y - (hb.y + hb.h));
@@ -191,8 +192,8 @@
       const c = this.coins[i]; c.x -= sp; c.t += dt;
       const m = this.st.magnet;
       if (canHit && !this.demo && overlap({ x: pb.x - m, y: pb.y - m, w: pb.w + m * 2, h: pb.h + m * 2 }, { x: c.x, y: c.y, w: 6, h: 6 })) {
-        this.coins.splice(i, 1); this.coinN++; this.score += 10 * this.st.coinMul * this.mult();
-        if (this.st.coinMul > 1) this.fx.text(c.x + 3, c.y - 4, 'x' + this.st.coinMul, '#ffc400', 7, .5); DR.Audio.sfx('coin');
+        this.coins.splice(i, 1); this.coinN++; const worth = this.st.coinMul * (1 + this.st.coinBonus); this.bank += worth; this.score += 10 * worth * this.mult();
+        if (worth > 1.01) this.fx.text(c.x + 3, c.y - 4, '+' + (Math.round(worth * 10) / 10), '#ffc400', 7, .5); DR.Audio.sfx('coin');
         this.fx.burst(c.x + 3, c.y + 3, 6, { color: ['#ffc400', '#fff6b0'], speed: 70, grav: 0, life: .3, size: 1.5, glow: true });
         continue;
       }

@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dino Odyssey</title>
+  <link rel="stylesheet" href="sidepanel.css">
+  <style>html,body{width:320px;height:700px;overflow:hidden}#app{width:320px;height:700px}</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="game"></canvas>
+
+  <!-- In-game HUD -->
+  <div id="hud" class="hidden">
+    <div class="hud-top">
+      <div id="hearts"></div>
+      <div class="hud-mid">
+        <div id="score">0</div>
+        <div id="coins"><span class="coin-ico"></span><span id="coinCount">0</span></div>
+      </div>
+      <button id="pauseBtn" class="icon-btn" title="Pause (P / Esc)">❚❚</button>
+    </div>
+    <div id="progress"><div id="progFill"></div><div id="progFlag">⚑</div></div>
+    <div id="bossBar" class="hidden">
+      <div id="bossName">BOSS</div>
+      <div class="bar"><div id="bossFill"></div></div>
+    </div>
+    <div id="combo"></div>
+    <div id="twistTag"></div>
+    <div id="dashTag" class="hidden"><div id="dashFill"></div><span id="dashText">≫ DASH · SHIFT</span></div>
+  </div>
+
+  <!-- Touch / mouse controls -->
+  <div id="touch" class="hidden">
+    <button id="btnDuck" class="pad" aria-label="Duck">▼</button>
+    <button id="btnDash" class="pad dash hidden" aria-label="Dash"><i id="padDashFill"></i><b>≫</b></button>
+    <button id="btnJump" class="pad" aria-label="Jump">▲</button>
+  </div>
+
+  <!-- Screens -->
+  <section id="scrTitle" class="screen">
+    <div class="offline-chip" id="netChip"><span class="dot"></span><span id="netText">No internet? No problem.</span></div>
+    <div class="logo">
+      <div class="logo-small">NO INTERNET</div>
+      <div class="logo-big">DINO<br>ODYSSEY</div>
+      <div class="logo-sub">8 worlds · 3 bosses · 19 dinos</div>
+    </div>
+    <div class="menu">
+      <button class="btn primary" id="btnContinue">▶ PLAY</button>
+      <div class="row">
+        <button class="btn" id="btnLevels">LEVELS</button>
+        <button class="btn" id="btnDinos">DINO DEX</button>
+      </div>
+      <div class="equipped" id="equipped"></div>
+      <button class="btn" id="btnUpgrades">DINO UPGRADES</button>
+      <div class="row">
+        <button class="btn small" id="btnSound">♪ SOUND: ON</button>
+        <button class="btn small" id="btnHelp">? HOW TO</button>
+      </div>
+    </div>
+    <div class="hint">Click here first, then press <kbd>SPACE</kbd></div>
+  </section>
+
+  <section id="scrLevels" class="screen hidden">
+    <div class="screen-head">
+      <button class="icon-btn" id="btnBackLevels">←</button>
+      <h2>SELECT WORLD</h2>
+      <div id="totalStars" class="stars-total">★ 0/24</div>
+    </div>
+    <button class="dex-link" id="btnLevelsDex"></button>
+    <div id="levelGrid"></div>
+  </section>
+
+  <section id="scrDex" class="screen hidden">
+    <div class="screen-head">
+      <button class="icon-btn" id="btnBackDex">←</button>
+      <h2>DINO DEX</h2>
+      <div id="dexCount" class="stars-total">1/19</div>
+    </div>
+    <div id="dexGrid"></div>
+    <p class="dex-foot">* Not technically dinosaurs, but we let them in anyway.</p>
+  </section>
+
+  <section id="scrDino" class="screen hidden">
+    <div class="screen-head">
+      <button class="icon-btn" id="btnBackDino">←</button>
+      <h2>DINO</h2>
+      <div id="wallet" class="wallet"><span class="coin-ico"></span><span id="walletN">0</span></div>
+    </div>
+    <div class="dino-hero"><canvas id="dpCanvas" width="300" height="190"></canvas></div>
+    <div class="dp-name" id="dpName"></div>
+    <div class="dp-power" id="dpPower"></div>
+    <div class="dp-era" id="dpEra"></div>
+    <div class="dp-perk" id="dpPerk"></div>
+    <button class="btn" id="dpEquip">EQUIP</button>
+    <div class="shop-group">POWERS · 🪙 = +1 BAR</div>
+    <div id="dpSkills"></div>
+  </section>
+
+  <section id="scrHelp" class="screen hidden">
+    <div class="screen-head">
+      <button class="icon-btn" id="btnBackHelp">←</button>
+      <h2>HOW TO PLAY</h2>
+      <div></div>
+    </div>
+    <div class="help">
+      <p><kbd>SPACE</kbd> / <kbd>↑</kbd> / tap — <b>Jump</b> (hold for higher)</p>
+      <p><kbd>↓</kbd> — <b>Duck</b> / fast-fall</p>
+      <p><kbd>SHIFT</kbd> / <kbd>→</kbd> — <b>Dash</b> (buy it in DINO UPGRADES)</p>
+      <p><kbd>P</kbd> / <kbd>ESC</kbd> — Pause &nbsp; <kbd>M</kbd> — Mute</p>
+      <hr>
+      <p>Reach the <b>⚑ finish</b> to clear a world. You have <b>3 hearts</b>.</p>
+      <p>Clear worlds and earn ★ to unlock <b>19 dinosaurs</b>, each with its own perk.</p>
+      <p>Spend coins in <b>DINO UPGRADES</b> on 4 powers per dino: Spring Legs, Thick Hide, <b>Double Jump</b> and <b>Dash</b>.</p>
+      <p>Dodge things by a hair for <b>CLOSE CALL</b> bonuses that build your combo.</p>
+      <p>Bosses throw <b class="glow">glowing orbs</b> — grab them to fire back!</p>
+      <hr>
+      <p>★ Clear the world &nbsp;★★ Grab 70% of coins &nbsp;★★★ Take no damage</p>
+      <p class="dim">Every world bends the rules. Watch the twist banner.</p>
+    </div>
+  </section>
+
+  <section id="scrPause" class="screen dim-bg hidden">
+    <h2 class="big">PAUSED</h2>
+    <div class="menu">
+      <button class="btn primary" id="btnResume">▶ RESUME</button>
+      <button class="btn" id="btnRestart">↻ RESTART</button>
+      <button class="btn" id="btnQuit">⌂ WORLDS</button>
+    </div>
+  </section>
+
+  <section id="scrResult" class="screen dim-bg hidden">
+    <div class="result-title" id="resTitle">WORLD CLEAR!</div>
+    <div class="result-stars" id="resStars"><span>★</span><span>★</span><span>★</span></div>
+    <div class="result-stats" id="resStats"></div>
+    <div class="unlock hidden" id="resUnlock"></div>
+    <div class="menu">
+      <button class="btn primary" id="btnNext">NEXT WORLD ▶</button>
+      <button class="btn" id="btnReplay">↻ REPLAY</button>
+      <div class="row">
+        <button class="btn small" id="btnResShop">UPGRADES</button>
+        <button class="btn small" id="btnResWorlds">⌂ WORLDS</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="scrOver" class="screen dim-bg hidden">
+    <div class="result-title red">EXTINCT</div>
+    <div class="result-stats" id="overStats"></div>
+    <div class="tip" id="overTip"></div>
+    <div class="menu">
+      <button class="btn primary" id="btnRetry">↻ TRY AGAIN</button>
+      <div class="row">
+        <button class="btn small" id="btnOverShop">UPGRADES</button>
+        <button class="btn small" id="btnOverWorlds">⌂ WORLDS</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="focusHint" class="hidden">Click to focus the game</div>
+</div>
+
+<script>
+  localStorage.setItem('dr_save', JSON.stringify({ unlocked: 9, stars: {}, best: {}, last: 9, dino: 'compy', coins: 500 }));
+  localStorage.setItem('dr_muted', '1');
+  window.__errs = [];
+  window.addEventListener('error', e => {
+    const G = window.DR && DR.game, S = G && G.S;
+    document.title = 'ERR: ' + e.message
+      + ' | phase=' + (G && G.phase) + ' scroll=' + (G && G.scroll) + ' speed=' + (G && G.speed)
+      + ' demo=' + (G && G.demo) + ' L=' + (G && G.L && G.L.id)
+      + ' dino=' + (S && S.dino && Object.keys(S.dino)) + ' run=' + (S && S.dino && S.dino.run.length)
+      + ' dead=' + (G && G.p && G.p.dead) + ' duck=' + (G && G.p && G.p.duck) + ' ground=' + (G && G.p && G.p.onGround);
+  });
+</script>
+<script src="js/sprites.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/levels.js"></script>
+<script src="js/dinos.js"></script>
+<script src="js/upgrades.js"></script>
+<script src="js/backgrounds.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/game.js"></script>
+<script src="js/entities.js"></script>
+<script src="js/ui.js"></script>
+<script>
+  try {
+    const h = location.hash;
+    if (h === '#levels' || h === '#levels9') {
+      document.getElementById('btnLevels').click();
+      if (h === '#levels9') { const sc = document.getElementById('scrLevels'); sc.scrollTop = sc.scrollHeight; DR.Audio.sfx('click'); }
+    } else if (h === '#run') {
+      DR.startLevel(9, true);
+      const g = DR.game;
+      g.setPhase('play', 0); g.phaseT = 1.2; g.p.x = 60; g.zoom = 1;
+      // simple autopilot so the screenshot shows live gameplay, not a corpse
+      let hold = 0;
+      for (let i = 0; i < 520; i++) {
+        g.hearts = 3;
+        const p = g.p, reach = g.speed * 0.3 + 22;
+        let lift = false;
+        for (const o of g.obs) {
+          if (o.kind === 'ground' || o.kind === 'pit' || o.kind === 'faller') {
+            const dx = o.x - (p.x + 12);
+            if (dx > -o.w && dx < reach) lift = true;
+          }
+          if (o.kind === 'flyer' && o.x - (p.x + 12) < reach && o.x > p.x && o.y > g.GY - 30) g.setDuck(true);
+        }
+        if (lift && p.onGround) { g.press(); hold = 15; }
+        if (hold > 0) { hold--; if (!hold) g.release(); }
+        if (!lift) g.setDuck(false);
+        g.update(1 / 60, 1 / 60);
+      }
+      g.render();
+    } else { DR.startLevel(9, true); DR.game.p.x = 60; }
+  } catch (e) { document.title = 'ERR: ' + e.message + ' | ' + (e.stack || '').split('\n')[1]; }
+</script>
+</body>
+</html>

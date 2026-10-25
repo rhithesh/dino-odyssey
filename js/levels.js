@@ -68,6 +68,14 @@ DR.LEVELS = [
     music: { bpm: 146, root: 45, scale: 'minor', prog: [0, 5, 6, 4], lead: 'sawtooth', drive: true, echo: true, seed: 88 },
     tips: ['The rules change every few hundred meters. Read the banner!'],
   },
+  {
+    id: 9, name: 'NO INTERNET', tagline: 'The one that started it all. Still offline.', twist: 'RETRO MODE — the original dino, exactly as you remember',
+    mode: 'run', bg: 'retro', weather: 'none', ground: 'chrome', flyer: 'ptero', retro: true,
+    goal: 900, speed: [200, 285], gap: [1.05, 1.95], flyerFrom: .3,
+    palette: { skyTop: '#f7f7f7', skyMid: '#f7f7f7', skyBot: '#f7f7f7', sun: '#f7f7f7', far: '#e6e6e6', mid: '#dcdcdc', near: '#cfcfcf', ground: '#f7f7f7', groundDark: '#9a9a9a', line: '#535353', dino: '#535353', dinoEye: '#f7f7f7', obstacle: '#535353', flyer: '#535353', accent: '#535353', accent2: '#7a7a7a', grade: 'rgba(0,0,0,0)' },
+    music: { bpm: 126, root: 60, scale: 'major', prog: [0, 4, 5, 3], lead: 'square', seed: 99 },
+    tips: ['↑ jump, ↓ duck. Cacti hurt. Pterodactyls hurt more.', 'The real one: paper-white sky, no mercy.'],
+  },
 ];
 
 // Phases for the final world: each segment swaps the twist.

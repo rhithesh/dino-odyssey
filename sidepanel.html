@@ -27,11 +27,13 @@
     </div>
     <div id="combo"></div>
     <div id="twistTag"></div>
+    <div id="dashTag" class="hidden"><div id="dashFill"></div><span id="dashText">≫ DASH · SHIFT</span></div>
   </div>
 
   <!-- Touch / mouse controls -->
   <div id="touch" class="hidden">
     <button id="btnDuck" class="pad" aria-label="Duck">▼</button>
+    <button id="btnDash" class="pad dash hidden" aria-label="Dash"><i id="padDashFill"></i><b>≫</b></button>
     <button id="btnJump" class="pad" aria-label="Jump">▲</button>
   </div>
 
@@ -50,6 +52,7 @@
         <button class="btn" id="btnDinos">DINO DEX</button>
       </div>
       <div class="equipped" id="equipped"></div>
+      <button class="btn" id="btnUpgrades">DINO UPGRADES</button>
       <div class="row">
         <button class="btn small" id="btnSound">♪ SOUND: ON</button>
         <button class="btn small" id="btnHelp">? HOW TO</button>
@@ -78,6 +81,22 @@
     <p class="dex-foot">* Not technically dinosaurs, but we let them in anyway.</p>
   </section>
 
+  <section id="scrDino" class="screen hidden">
+    <div class="screen-head">
+      <button class="icon-btn" id="btnBackDino">←</button>
+      <h2>DINO</h2>
+      <div id="wallet" class="wallet"><span class="coin-ico"></span><span id="walletN">0</span></div>
+    </div>
+    <div class="dino-hero"><canvas id="dpCanvas" width="300" height="190"></canvas></div>
+    <div class="dp-name" id="dpName"></div>
+    <div class="dp-power" id="dpPower"></div>
+    <div class="dp-era" id="dpEra"></div>
+    <div class="dp-perk" id="dpPerk"></div>
+    <button class="btn" id="dpEquip">EQUIP</button>
+    <div class="shop-group">POWERS · 🪙 = +1 BAR</div>
+    <div id="dpSkills"></div>
+  </section>
+
   <section id="scrHelp" class="screen hidden">
     <div class="screen-head">
       <button class="icon-btn" id="btnBackHelp">←</button>
@@ -87,10 +106,12 @@
     <div class="help">
       <p><kbd>SPACE</kbd> / <kbd>↑</kbd> / tap — <b>Jump</b> (hold for higher)</p>
       <p><kbd>↓</kbd> — <b>Duck</b> / fast-fall</p>
+      <p><kbd>SHIFT</kbd> / <kbd>→</kbd> — <b>Dash</b> (buy it in DINO UPGRADES)</p>
       <p><kbd>P</kbd> / <kbd>ESC</kbd> — Pause &nbsp; <kbd>M</kbd> — Mute</p>
       <hr>
       <p>Reach the <b>⚑ finish</b> to clear a world. You have <b>3 hearts</b>.</p>
       <p>Clear worlds and earn ★ to unlock <b>19 dinosaurs</b>, each with its own perk.</p>
+      <p>Spend coins in <b>DINO UPGRADES</b> on 4 powers per dino: Spring Legs, Thick Hide, <b>Double Jump</b> and <b>Dash</b>.</p>
       <p>Dodge things by a hair for <b>CLOSE CALL</b> bonuses that build your combo.</p>
       <p>Bosses throw <b class="glow">glowing orbs</b> — grab them to fire back!</p>
       <hr>
@@ -116,7 +137,10 @@
     <div class="menu">
       <button class="btn primary" id="btnNext">NEXT WORLD ▶</button>
       <button class="btn" id="btnReplay">↻ REPLAY</button>
-      <button class="btn" id="btnResWorlds">⌂ WORLDS</button>
+      <div class="row">
+        <button class="btn small" id="btnResShop">UPGRADES</button>
+        <button class="btn small" id="btnResWorlds">⌂ WORLDS</button>
+      </div>
     </div>
   </section>
 
@@ -126,7 +150,10 @@
     <div class="tip" id="overTip"></div>
     <div class="menu">
       <button class="btn primary" id="btnRetry">↻ TRY AGAIN</button>
-      <button class="btn" id="btnOverWorlds">⌂ WORLDS</button>
+      <div class="row">
+        <button class="btn small" id="btnOverShop">UPGRADES</button>
+        <button class="btn small" id="btnOverWorlds">⌂ WORLDS</button>
+      </div>
     </div>
   </section>
 
@@ -137,6 +164,7 @@
 <script src="js/audio.js"></script>
 <script src="js/levels.js"></script>
 <script src="js/dinos.js"></script>
+<script src="js/upgrades.js"></script>
 <script src="js/backgrounds.js"></script>
 <script src="js/fx.js"></script>
 <script src="js/game.js"></script>

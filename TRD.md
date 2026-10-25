@@ -1,4 +1,4 @@
-# Dino Odyssey — Technical Requirements Document (As-Built, v1.2.0)
+# Dino Odyssey — Technical Requirements Document (As-Built, v1.3.0)
 
 ## 1. System overview
 
@@ -9,7 +9,7 @@ manifest.json
 background.js
 sidepanel.html
 sidepanel.css
-js/sprites.js → js/audio.js → js/levels.js → js/dinos.js → js/backgrounds.js → js/fx.js → js/game.js → js/entities.js → js/ui.js
+js/sprites.js → js/audio.js → js/levels.js → js/dinos.js → js/upgrades.js → js/backgrounds.js → js/fx.js → js/game.js → js/entities.js → js/ui.js
 icons/icon{16,32,48,128}.png
 ```
 
@@ -100,11 +100,29 @@ Species build pipeline (`species(D, colors, outline)`):
 
 `DR.DINO_BASE` = `{hearts:3, jumpV:600, hold:.2, coyote:.09, buffer:.13, inv:1.6, magnet:3, close:6, comboDiv:6, swimThrust:1250, sinkIdle:560, speedMul:1, maxSpeedMul:1, penaltyRec:.4, light:0, coinMul:1, bossMul:1, fallerShield:0, lavaShield:0, breaker:0}`.
 
-`DR.DINOS[19]` entries: `{id, name, short, era, fact, perk, unlock, stats, colors, body, duck, lx|bx|fx, ox, plan?, tall?, claw?, classic?}`. `stats` overrides `DINO_BASE` (e.g. Ankylosaurus `{hearts:4, jumpV:565}`, Brachiosaurus `{coinMul:2, hearts:1}`, Carnotaurus `{lavaShield:1}`). `plan` is `quad`, `flipper` (Mosasaurus) or omitted for biped.
+`DR.DINOS[19]` entries: `{id, name, short, era, unlock, stats, colors, body, duck, lx|bx|fx, ox, plan?, tall?, claw?, classic?}` (no user-facing perk/fact strings). `stats` overrides `DINO_BASE` (e.g. Ankylosaurus `{hearts:4, jumpV:565}`, Brachiosaurus `{coinMul:2, hearts:1}`, Carnotaurus `{lavaShield:1}`). `plan` is `quad`, `flipper` (Mosasaurus) or omitted for biped.
 
 Unlock rules (`unlock`): `{start}`, `{world:n}` (≥1★ in world n), `{stars:n}` (total stars), `{allStars}` (3★ in all 8 worlds). `DR.dinoUnlocked(D, save)` evaluates them from `save.stars`, so unlocks are derived, never stored. `DR.dinoHint(D)` returns the lock label.
 
 Perk wiring (single point each): `st.jumpV/hold` in `tryAction`; `st.coyote/buffer` in `press` and `updatePlayer`; `st.inv` in `damage`; `st.comboDiv` in `mult`; `st.light` added to both darkness light radii in `render`; `st.speedMul/maxSpeedMul/penaltyRec` in `update`; `st.swimThrust/sinkIdle` in swim physics; `st.magnet/close/coinMul/bossMul` and the three charge perks in `entities.js`; `st.hearts` in `load`.
+
+## 10C. Coins and power bars (upgrades.js, ui.js, game.js)
+
+**Data.** `DR.STATS[4]` = `jump | tough | agile | dash` (`{id, icon, name, hint}`), `DR.MAX_BARS = 10`. Starting bars per dino in a private table `B` (`[jump, tough, agile, dash]`), exposed via `DR.baseBars(id)`. `DR.barsOf(save, id)` = `min(10, base + save.bars[id][stat])`. `DR.barCost(n, id)` = `(40 + 25n) × (1 + .2·rank)` rounded to 5. `DR.winBonus(stars, boss)`.
+
+**Effects** (`DR.applyBars(st, bars)`, returns a copy): jump `jumpV += 8j`; tough `inv += .08t`, `penaltyRec += .04t`, `hearts += (t≥5) + (t≥10)`; agile `coyote += .006a`, `buffer += .008a`, `fall += .15a`, and at `a ≥ 5` `air = 1`, `airPow = .8 + .02a`; dash at `d ≥ 1` `dashLvl = 1`, `dashDur = .3 + .03d`, `dashCd = 7.5 − .4d`.
+
+**Power stars.** `DR.DINO_TIER` (id → 1..5), `dinoRank = tier − 1` (bar prices), `DR.powerStars(id)` (UI). No hidden per-tier stat bonuses any more; strength lives entirely in the starting bars.
+
+**Stat build in `Game.load(L, {dino, up})`:** `DINO_BASE` ← species `stats` ← `applyBars(up)` where `up = barsOf(save, dino)`; skipped in demo.
+
+**Moves.** Double jump in `press()` (run mode, airborne, `coyote ≤ 0`, `p.air > 0`, `airT > .06`, `GY − y > 24`; `vy = −jumpV · airPow`), refills on landing. `dash()` (phase `play|boss`, no active dash or cooldown): `p.dash`, `p.dashCd`, `inv ≥ .12` while active, speed target ×1.7 with fast smoothing, trail/sparks/shimmer. Overlap while invincible sets `o.grazed` (no combo).
+
+**Banking.** Each coin adds `coinMul × (1 + coinBonus)` to `game.bank`; `end()` returns `bank`; `ui.onEnd` adds `bank + winBonus` to `save.coins` on win and death.
+
+**Persistence.** `save.coins`, `save.bars = {dinoId: {jump?, tough?, agile?, dash?}}` (bought counts). Earlier `save.skills` one-off powers are refunded at their price and removed; `save.up` is dropped.
+
+**UI.** `scrDino`: `openDino(id, from)` / `buildDino(flash)` / `closeDino()`. Hero `#dpCanvas` (300×190) is a 3D turntable: the current walk frame is extruded into a slab (copies stacked along depth, inner copies = body colours ×0.62 with the outline stripped), sorted back-to-front by `z·cos(a)`, scaled horizontally by `cos(a)`; auto-spins, drag to spin. Each stat renders a `.meter` of 10 `<i>` (`base` white, `on` gold, `mark` milestone dot), a `n/10` count, hint and price button (🪙 cost / MAX). Dex lists the equipped dino first; cards open the page. Dash pad and `#dashTag` HUD pill shown when the equipped dino has ≥1 Dash bar.
 
 ## 11. Audio (audio.js)
 
@@ -128,5 +146,5 @@ Dex: `openDex(from)` / `buildDex()` / `closeDex()`; `dinoCard(D,w,h,frame,locked
 
 ## 14. Verification
 
-- `node --check js/*.js` passes (no imports to check).
+- `node --check js/*.js` passes (no imports to check). In this environment node lives at `/opt/homebrew/bin/node`.
 - Species: render a zoomed frame sheet of all 19 (stand, 4 walk, duck) on dark and light backgrounds and inspect; smoke-run every species through a level for 5 s of simulated frames with no exceptions; assert per-perk state (hearts, `st`, `perks`) after forced collisions; check the unlock card by calling `game.end(true)` on a world. Note: in the automated preview the tab is hidden, so `requestAnimationFrame` does not run and the game loop must be stepped manually (`update(1/60,1/60)` then `render()`). Manual: `python3 -m http.server` + load as unpacked extension, open side panel, play W1→W8, kill bosses via orbs, confirm stars persist after reload.

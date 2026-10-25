@@ -196,11 +196,46 @@
         },
       };
     },
+    // The Chrome "no internet" page: flat paper sky, pixel clouds, one thin horizon.
+    retro(P, W, H, GY, LW) {
+      const s = mk(W, H), g = s.getContext('2d');
+      g.fillStyle = P.skyTop; g.fillRect(0, 0, W, H);
+      g.fillStyle = mix(P.skyTop, P.far, .55); g.fillRect(0, GY - 30, W, 30);
+      const far = mk(LW, H), fg = far.getContext('2d');
+      ridge(fg, LW, H, GY - 2, 22, P.far, 71, { step: 3, flat: 3, harmonics: [1, 2, 3] });
+      const mid = mk(LW, H), mg = mid.getContext('2d');
+      ridge(mg, LW, H, GY, 10, P.mid, 72, { step: 2, flat: 2, harmonics: [2, 3, 5] });
+      return {
+        sky: s,
+        layers: [{ img: far, speed: .05 }, { img: mid, speed: .12 }],
+        extra(ctx, t, scroll) { // drifting pixel clouds
+          const cloud = (x, y, k) => {
+            ctx.fillStyle = 'rgba(200,200,200,.9)';
+            ctx.fillRect(x + 5 * k, y, 7 * k, 2 * k);
+            ctx.fillRect(x + 2 * k, y + 2 * k, 12 * k, 2 * k);
+            ctx.fillRect(x, y + 4 * k, 16 * k, 2 * k);
+          };
+          for (let i = 0; i < 4; i++) {
+            const span = W + 220;
+            const x = (((i * 173 + 40 - scroll * .09) % span) + span) % span - 110;
+            if (x > -70 && x < W + 20) cloud(x, H * (.11 + (i % 3) * .085), i === 2 ? 2 : 1);
+          }
+        },
+      };
+    },
   };
 
   // Ground strip (tileable, from GY to bottom).
   function groundTile(L, W, H, GY, LW) {
     const P = L.palette, gh = H - GY, c = mk(LW, gh), g = c.getContext('2d'), R = rng(L.id * 7);
+    if (L.bg === 'retro') {
+      // white floor, one 2px horizon line and a few pebbles — like the offline page
+      g.fillStyle = P.ground; g.fillRect(0, 0, LW, gh);
+      g.fillStyle = P.line; g.fillRect(0, 0, LW, 2);
+      for (let i = 0; i < 10; i++) { const x = R() * LW | 0; g.fillRect(x, 2, 1 + (R() * 2 | 0), 1); }
+      for (let i = 0; i < 30; i++) { const x = R() * LW | 0, y = 5 + R() * Math.min(12, Math.max(1, gh - 6)) | 0; g.fillRect(x, y, 1 + (R() * 3 | 0), 1); }
+      return c;
+    }
     sky(g, LW, gh, P.ground, mix(P.ground, P.groundDark, .5), P.groundDark, 6);
     g.fillStyle = P.line; g.fillRect(0, 0, LW, 2);
     for (let i = 0; i < LW / 3; i++) { g.fillStyle = R() < .5 ? P.groundDark : P.line; g.fillRect(R() * LW | 0, 4 + R() * gh | 0, 1 + (R() * 3 | 0), 1); }

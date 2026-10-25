@@ -1,4 +1,4 @@
-# Dino Odyssey — Product Requirements Document (v1.2.0)
+# Dino Odyssey — Product Requirements Document (v1.3.0)
 
 > Source of truth: code in this folder as of 2026-10-25 (incl. the 19-species roster and walk animation). Fully offline Chrome Side Panel game. Design rationale for the roster: `DINO_DESIGN_PLAN.md`.
 
@@ -49,7 +49,7 @@ Tips per world shown on death screen (e.g. W1: hold SPACE higher, ↓ slam; W4: 
 
 ## 4B. Playable Species Roster (19 dinosaurs, all implemented)
 
-Each species has its own pixel art and exactly one perk. All species share the same hitbox (`12x17` standing / `21x9` ducking), so art never changes difficulty; only the perk does. No pay-to-win: everything unlocks offline by clearing worlds and earning stars.
+Each species has its own pixel art and exactly one perk. All species share the same hitbox (`12x17` standing / `21x9` ducking), so art never changes difficulty; only the perk does. Perk and fact copy is not shown in the UI — the table below is the only place effects are described. No pay-to-win: everything unlocks offline by clearing worlds and earning stars.
 
 Data lives in `DR.DINOS` (`js/dinos.js`); defaults in `DR.DINO_BASE`. The equipped species is `save.dino`.
 
@@ -94,11 +94,40 @@ Data lives in `DR.DINOS` (`js/dinos.js`); defaults in `DR.DINO_BASE`. The equipp
 
 ### Dino Dex (UI)
 - Opened from the title ("DINO DEX · n NEW" badge when something is unseen) and from a link at the top of the worlds screen.
-- Grid of cards: animated sprite for the equipped/hovered card, name, era, perk, fact. Locked cards show a black silhouette and the unlock hint (`CLEAR WORLD 5`, `EARN 12 ★`, `3★ EVERY WORLD`).
+- Grid of cards: animated sprite for the equipped/hovered card, name, era and POWER ★. Locked cards show a black silhouette and the unlock hint (`CLEAR WORLD 5`, `EARN 12 ★`, `3★ EVERY WORLD`).
 - Tap an unlocked card to equip; it is saved immediately and the title demo switches to it. Equipped card shows an EQUIPPED tag.
 - Results screen shows a "NEW DINO UNLOCKED" card (with "+n more" when several unlock at once).
 - The equipped species shows on the title ("PLAYING AS …"), the level intro card, and the level-select thumbnails.
 - Perk saves show a callout in-run: `BONK!`, `HOT HOP!`, `SMASH!`.
+
+## 4C. Coins and Power Bars
+
+Every dino has **4 power meters of 10 bars**. Each dino starts with its own bars (its strengths); each coin purchase adds **one bar**, and each next bar costs more.
+
+**Earning.** Every coin collected is banked at the end of the run, win or lose. Clearing a world adds `15 + 5 per star`, `+30` on boss worlds.
+
+**Dino page.** Opened from the title's **DINO UPGRADES** button (equipped dino), by tapping any card in the **Dino Dex** (equipped dino is always listed first), or from UPGRADES on the results / game-over screens. Shows the dino as a large revolving 3D pixel figure (still walking; drag to spin it), name, **POWER ★** rating, era, **EQUIP**, and the 4 meters. White bars = starting bars, gold = bought, green dots = milestone bars. Locked dinos show a silhouette and unlock hint; bars can't be bought yet.
+
+| Bar | Each bar | Milestones |
+|---|---|---|
+| ⇡ JUMP | +8 jump power (10 bars ≈ 28% higher jump) | — |
+| ♥ TOUGHNESS | +0.08 s invincibility, faster hit recovery | +1 heart at 5 bars, +1 more at 10 |
+| ⚡ AGILITY | More forgiving jump timing, faster fast-fall | **Double Jump** at 5 bars (stronger with more bars) |
+| ≫ DASH | Longer dash (0.33 → 0.6 s), shorter cooldown (7.1 → 3.5 s) | Dash unlocks at 1 bar (SHIFT / D / →) |
+
+**Bar price:** next bar at meter level n costs `40 + 25·n` coins (40, 65, 90 … 265), +20% per power star above 1.
+
+**Starting bars [jump, tough, agile, dash]** (later dinos start fuller, each with its own strengths):
+
+| ★ | Dinos |
+|---|---|
+| 1 | Compsognathus 2/2/3/0 · Hypsilophodon 2/1/4/0 · Velociraptor 2/1/4/1 |
+| 2 | Gallimimus 3/2/4/3 · Parasaurolophus 3/3/3/2 · Dilophosaurus 3/3/3/3 · Pachycephalosaurus 2/5/2/2 |
+| 3 | Iguanodon 3/4/3/3 · Carnotaurus 4/3/4/4 · Allosaurus 4/4/4/3 · Stegosaurus 2/6/2/3 |
+| 4 | Ankylosaurus 1/8/2/2 · Triceratops 3/6/3/5 · Spinosaurus 4/5/4/4 · Pteranodon 7/2/5/3 · Microraptor 4/2/7/5 |
+| 5 | T-Rex 5/7/4/6 · Mosasaurus 4/5/6/6 · Brachiosaurus 6/4/4/6 |
+
+Bars stack on top of the species perk (e.g. Ankylosaurus 4 hearts + Toughness bonus). Star rules are unchanged; the title demo ignores bars.
 
 ## 5. Core mechanics
 
@@ -110,7 +139,7 @@ Data lives in `DR.DINOS` (`js/dinos.js`); defaults in `DR.DINO_BASE`. The equipp
 - **Close call:** passing with <6px gap (9px for Parasaurolophus) → text (CLOSE!/WHOA!/NICE!), sfx, burst.
 - **Coins:** arcs/lines/waves over/around obstacles. Magnet radius +3px around player box.
 - **Stars (per world):** ★ clear + ★ 70% coins + ★ no damage = 24 total. Shown on level cards + result. Total stars gate species #2, 4, 6, 8, 10, 12, 14, 15, 18.
-- **Persistence:** `localStorage dr_save { unlocked, stars{}, best{}, last, dino, dinos[], dexNew[] }`, `dr_muted`. `dinos[]` = species already announced, `dexNew[]` = unlocked but not yet seen in the Dex. Saves from v1.0/1.1 migrate silently (already-earned species are not re-announced). An equipped species that is no longer unlocked falls back to Compsognathus.
+- **Persistence:** `localStorage dr_save { unlocked, stars{}, best{}, last, dino, dinos[], dexNew[], coins, bars{dinoId:{jump,tough,agile,dash}} }` (bars = bought on top of starting bars), `dr_muted`. `dinos[]` = species already announced, `dexNew[]` = unlocked but not yet seen in the Dex. Saves from v1.0/1.1 migrate silently (already-earned species are not re-announced). An equipped species that is no longer unlocked falls back to Compsognathus.
 
 Modes:
 - **run:** classic gravity 2600, variable jump (hold ≤0.2s = 0.42x gravity), ↓ in air = 3.2x slam, coyote 0.09s, jump buffer 0.13s, duck shrinks hitbox.
@@ -126,7 +155,8 @@ bossIntro (siren + WARNING stripes + slide-in) → boss (dodge pattern, orbs eve
 
 ## 6. Controls
 
-- SPACE / ↑ / W / tap / ▲ pad: jump / swim-up / flip (context). Hold = higher (run).
+- SPACE / ↑ / W / tap / ▲ pad: jump / swim-up / flip (context). Hold = higher (run). Press again in the air for Double Jump when owned.
+- SHIFT / D / → / ≫ pad: Dash (when owned).
 - ↓ / S / ▼ pad: duck / fast-fall / sink.
 - P / ESC / pauseBtn: pause. M: mute. Enter: confirm on menus.
 - Side panel focus required; blur/hidden tab auto-pauses with "Click to focus" hint.
@@ -147,4 +177,5 @@ Per-world bpm/root/scale/prog/lead/arp/pad/echo/drive. Boss = same cfg 1.12x fas
 - 19 species defined in `DR.DINOS`, all unlockable via world-clear + star gates; equip persists via `save.dino`.
 - Every species renders all frames (stand, 4 walk, jump, 4 duck, hurt) without error in all 8 worlds.
 - Perks verified in-run: Carnotaurus lava bounce (first pit only), Pachycephalosaurus faller block, Ankylosaurus 4 hearts, Brachiosaurus 1 heart, Stegosaurus 2.0 s i-frames, Microraptor coyote, Allosaurus combo. Triceratops smash and the remaining stat perks are wired but not individually exercised.
+- Power bars verified: buying a bar and the rising price, refund of earlier one-off powers, per-dino bars, Agility 5 → Double Jump, Dash from 1 bar, Toughness 5 → +1 heart, 3D page, Dex → page → back, Equip, Dash invincibility/cooldown, double jump once per airtime.
 - Not verified: real hand-played balance, audio by ear, motion feel of the walk cycle in live Chrome.

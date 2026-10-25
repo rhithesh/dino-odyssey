@@ -216,11 +216,16 @@ window.DR = window.DR || {};
   const CACTUS_S = ['   ##   ', '  ####  ', '  #### #', '# #### #', '# #### #', '# #### #', '# ######', '######  ', '  ####  ', '  ####  ', '  ####  ', '  ####  ', '  ####  ', '  ####  '];
   const CACTUS_L = ['     ##     ', '    ####    ', '    ####    ', '    ####  # ', ' #  ####  ##', '##  ####  ##', '##  ####  ##', '##  ####  ##', '##  ####  ##', '##  #######', '##  ######  ', '#######     ', ' ######     ', '    ####    ', '    ####    ', '    ####    ', '    ####    ', '    ####    ', '    ####    ', '    ####    ', '    ####    '];
 
+  // The authentic offline-page cactus: fat trunk, two arms at different heights.
+  const CHROME_S = ['   ###   ', '   ###   ', '   ###   ', '#  ###  #', '#  ###  #', '#  ###  #', '######  #', '   ######', '   ###   ', '   ###   ', '   ###   ', '   ###   ', '   ###   ', '   ###   '];
+  const CHROME_L = ['    #####    ', '    #####    ', '    #####    ', '    #####    ', '#   #####   #', '#   #####   #', '#   #####   #', '#   #####   #', '#########   #', '    #########', '    #####    ', '    #####    ', '    #####    ', '    #####    ', '    #####    ', '    #####    ', '    #####    ', '    #####    ', '    #####    ', '    #####    '];
+
   function genGround(kind, size, P, seed) {
     const R = rng(seed);
     const big = size === 'L';
     switch (kind) {
       case 'cactus': return spr(big ? CACTUS_L : CACTUS_S, { '#': P.obstacle });
+      case 'chrome': return spr(big ? CHROME_L : CHROME_S, { '#': P.obstacle });
       case 'barrier': {
         const w = big ? 14 : 10, h = big ? 20 : 13, c = mk(w, h), g = c.getContext('2d');
         g.fillStyle = P.obstacle; g.fillRect(1, 2, 2, h - 2); g.fillRect(w - 3, 2, 2, h - 2);

@@ -40,21 +40,24 @@
     }
 
     // ---------------- level lifecycle ----------------
-    load(L, { demo = false, quick = false, dino = 'compy' } = {}) {
+    load(L, { demo = false, quick = false, dino = 'compy', up = null } = {}) {
       this.L = L; this.demo = demo; this.dinoId = dino; this.S = DR.Sprites.forLevel(L, dino);
       const D = DR.DINOS.find(d => d.id === dino) || DR.DINOS[0];
       this.dino = D; this.st = Object.assign({}, DR.DINO_BASE, D.stats);
+      // Power bars (the dino's starting bars + bought ones) on top of the species perk.
+      // The demo stays stock so the title autopilot is stable.
+      if (!demo) this.st = DR.applyBars(this.st, up || DR.baseBars(D.id));
       this.perks = { faller: this.st.fallerShield, lava: this.st.lavaShield, breaker: this.st.breaker };
       this.fx = null; this.rebuild();
       this.mode = L.mode === 'mix' ? 'run' : L.mode;
       this.mixIdx = 0; this.darkOn = !!L.dark; this.fallersOn = L.mode !== 'mix' && !!L.fallers;
       Object.assign(this, {
-        dist: 0, scroll: 0, speed: demo ? L.speed[0] : 0, penalty: 1, hearts: this.st.hearts, maxHearts: this.st.hearts, score: 0, coinN: 0, coinsSpawned: 0,
+        dist: 0, scroll: 0, speed: demo ? L.speed[0] : 0, penalty: 1, hearts: this.st.hearts, maxHearts: this.st.hearts, score: 0, coinN: 0, coinsSpawned: 0, bank: 0,
         closeN: 0, hits: 0, streak: 0, obs: [], coins: [], nextSpawn: L.speed[0] * 1.2, boss: null, bossDone: false,
         finishing: false, finish: null, banner: null, light: 0, lightT: 3 + Math.random() * 3, gustT: 7, gust: 0,
         shake: 0, hitstop: 0, slow: 1, zoom: demo ? 1 : 1.35, lb: demo ? 0 : 1, trail: [], runTime: 0, ceilA: L.mode === 'flip' ? 1 : 0,
       });
-      this.p = { x: demo ? 50 : -40, y: this.GY, vy: 0, g: 1, onGround: true, duck: false, inv: 0, coyote: 0, buf: 0, hold: 0, rot: 0, dead: false };
+      this.p = { x: demo ? 50 : -40, y: this.GY, vy: 0, g: 1, onGround: true, duck: false, inv: 0, coyote: 0, buf: 0, hold: 0, rot: 0, dead: false, air: this.st.air, airT: 0, dash: 0, dashCd: 0 };
       this.phase = demo ? 'demo' : 'intro';
       this.phaseT = quick ? 1.8 : 0;
       this.paused = false; this.ended = false;
@@ -66,7 +69,25 @@
     press() {
       this.keys.jump = true;
       if (!this.live()) return;
-      this.p.buf = this.st.buffer;
+      const p = this.p;
+      // Double jump: only from a real mid-air press (not just before landing, which should buffer a normal jump).
+      if (this.mode === 'run' && !p.onGround && p.coyote <= 0 && p.air > 0 && p.airT > .06 && this.GY - p.y > 24) {
+        p.air--; p.vy = -this.st.jumpV * (this.st.airPow || .88); p.hold = this.st.hold * .6; p.buf = 0;
+        DR.Audio.sfx('jump');
+        this.fx.ring(p.x + 10, p.y - 2, this.L.palette.accent, 18, .3);
+        this.fx.burst(p.x + 10, p.y - 2, 8, { color: [this.L.palette.accent, '#fff'], speed: 80, angle: Math.PI / 2, spread: 1.6, life: .3, grav: 0, size: 1.5, glow: true });
+        return;
+      }
+      p.buf = this.st.buffer;
+    }
+    // Dash: a short, fast burst that phases through hazards. Cooldown depends on the shop level.
+    dash() {
+      const p = this.p, st = this.st;
+      if (!st.dashLvl || !this.live() || this.demo || p.dash > 0 || p.dashCd > 0 || !['play', 'boss'].includes(this.phase)) return;
+      p.dash = st.dashDur; p.dashCd = st.dashCd; p.inv = Math.max(p.inv, st.dashDur + .12);
+      this.shake = Math.max(this.shake, 4); this.fx.doFlash(.18, this.L.palette.accent);
+      this.fx.ring(p.x + 10, p.y - 9 * p.g, this.L.palette.accent, 26, .3);
+      DR.Audio.sfx('shoot');
     }
     release() { this.keys.jump = false; }
     setDuck(on) { this.keys.duck = on; }
@@ -108,6 +129,7 @@
       this.phaseT += realDt;
       this.shake = Math.max(0, this.shake - realDt * 30);
       p.inv = Math.max(0, p.inv - dt);
+      if (p.dash > 0) { p.dash = Math.max(0, p.dash - dt); p.inv = Math.max(p.inv, .12); } else if (p.dashCd > 0) p.dashCd = Math.max(0, p.dashCd - dt);
       const live = this.live();
       const targetLb = ['intro', 'bossIntro', 'win', 'dead'].includes(this.phase) ? 1 : 0;
       this.lb += (targetLb - this.lb) * Math.min(1, realDt * 4);
@@ -118,7 +140,8 @@
       if (this.phase === 'intro') target = this.phaseT > 1.2 ? L.speed[0] * ease((this.phaseT - 1.2) / 2.3) : 0;
       if (this.phase === 'boss' || this.phase === 'bossIntro') target = L.speed[1] * .85;
       if (this.phase === 'dead') target = 0;
-      this.speed += (target - this.speed) * Math.min(1, dt * 2.5);
+      if (p.dash > 0) target *= 1.7;
+      this.speed += (target - this.speed) * Math.min(1, dt * (p.dash > 0 ? 14 : 2.5));
       this.penalty += (1 - this.penalty) * dt * this.st.penaltyRec;
       this.scroll += this.speed * dt;
 
@@ -182,7 +205,8 @@
           if (heavy) this.shake = Math.max(this.shake, .8); // big dinos make the ground thud
         }
       }
-      if (this.mult() >= 2 && live) { this.trail.push({ x: p.x, y: p.y, a: .5 }); if (this.trail.length > 6) this.trail.shift(); }
+      if (p.dash > 0 && live) this.fx.burst(p.x + 4, p.y - 9 * p.g, 2, { color: [this.L.palette.accent, '#fff'], speed: 60, angle: Math.PI, spread: .6, life: .25, grav: 0, size: 1.5, glow: true });
+      if ((this.mult() >= 2 || p.dash > 0) && live) { this.trail.push({ x: p.x, y: p.y, a: .5 }); if (this.trail.length > 6) this.trail.shift(); }
       else if (this.trail.length) this.trail.shift();
 
       if (!this.demo) this.hooks.hud && this.hooks.hud(this.hudState());
@@ -214,7 +238,7 @@
       // classic run physics
       let g = 2600;
       if (p.vy < 0 && this.keys.jump && p.hold > 0) { g *= .42; p.hold -= dt; } else p.hold = 0;
-      if (this.keys.duck && !p.onGround) g *= 3.2;
+      if (this.keys.duck && !p.onGround) g *= this.st.fall;
       p.vy += g * dt; p.y += p.vy * dt;
       const pit = this.pitUnder(p.x + 10);
       const was = p.onGround;
@@ -224,7 +248,7 @@
         if (p.y > GY + 8 && this.perks.lava > 0 && p.inv <= 0 && !this.demo) { this.perks.lava--; p.vy = -720; p.y = GY + 8; this.perkFx('HOT HOP!', '#ff8a00'); }
         else if (p.y > GY + 8) { this.damage('lava'); p.vy = -720; p.y = GY + 8; this.fx.burst(p.x + 10, GY, 18, { color: ['#ff4a00', '#ffd000', '#ff8a00'], speed: 160, life: .6, glow: true }); }
       } else p.onGround = false;
-      if (p.onGround) { p.coyote = this.st.coyote; p.duck = this.keys.duck; } else p.coyote -= dt;
+      if (p.onGround) { p.coyote = this.st.coyote; p.duck = this.keys.duck; p.air = this.st.air; p.airT = 0; } else { p.coyote -= dt; p.airT += dt; }
     }
     land() {
       const p = this.p;
@@ -276,10 +300,10 @@
     end(won) {
       this.ended = true;
       const stars = won ? 1 + (this.coinsSpawned === 0 || this.coinN >= this.coinsSpawned * .7 ? 1 : 0) + (this.hits === 0 ? 1 : 0) : 0;
-      this.hooks.end && this.hooks.end({ won, level: this.L.id, score: Math.round(this.score), coins: this.coinN, coinsTotal: this.coinsSpawned, close: this.closeN, hits: this.hits, time: this.runTime, dist: Math.round(this.dist), stars });
+      this.hooks.end && this.hooks.end({ won, level: this.L.id, score: Math.round(this.score), coins: this.coinN, coinsTotal: this.coinsSpawned, bank: Math.round(this.bank), close: this.closeN, hits: this.hits, time: this.runTime, dist: Math.round(this.dist), stars });
     }
     hudState() {
-      return { hearts: this.hearts, maxHearts: this.maxHearts, score: Math.round(this.score), coins: this.coinN, prog: clamp(this.dist / this.L.goal, 0, 1), mult: this.mult(),
+      return { dash: this.st.dashLvl ? { cd: this.p.dashCd, max: this.st.dashCd, on: this.p.dash > 0 } : null, hearts: this.hearts, maxHearts: this.maxHearts, score: Math.round(this.score), coins: this.coinN, prog: clamp(this.dist / this.L.goal, 0, 1), mult: this.mult(),
         boss: this.boss && !this.boss.gone ? { name: this.boss.name, hp: this.boss.hp, max: this.boss.max } : null, phase: this.phase };
     }
     showBanner(title, sub, color, dur = 2.6) { this.banner = { title, sub, color, t: 0, dur }; }
@@ -365,7 +389,7 @@
       this.fx.drawTexts(ctx);
       ctx.restore();
 
-      this.fx.post(ctx, L.palette.grade);
+      this.fx.post(ctx, L.palette.grade, L.retro ? .1 : 1);
       if (this.fx.glitch > 0) this.drawGlitch(ctx);
       if (this.phase === 'bossIntro') this.drawBossWarning(ctx);
       this.drawLetterbox(ctx);
@@ -386,7 +410,7 @@
       // Walk cycle advances with distance scrolled, so legs keep pace with the ground.
       const runFrame = Math.floor(this.scroll / STEP_PX) % S.dino.run.length;
       let img;
-      if (p.dead) img = S.dinoHurt.stand;
+      if (p.dead) img = this.L.retro ? S.dino.stand : S.dinoHurt.stand;
       else if (p.duck) img = S.dino.duck[runFrame];
       else if (!p.onGround && this.mode !== 'flip') img = S.dino.jump;
       else if (this.speed < 5 && this.phase !== 'intro') img = S.dino.stand;
@@ -395,9 +419,14 @@
       const ax = img.ax || 0, ay = img.ay || 0;
       for (let i = 0; i < this.trail.length; i++) { const t = this.trail[i]; ctx.globalAlpha = .08 * i; ctx.drawImage(img, t.x - ax - (this.trail.length - i) * 3, flipped ? t.y - ay : t.y - img.height + ay); }
       ctx.globalAlpha = 1;
-      if (p.inv > 0 && Math.floor(p.inv * 14) % 2 === 0 && !p.dead) img = p.duck ? S.dinoHurt.duck[runFrame] : !p.onGround && this.mode !== 'flip' ? S.dinoHurt.jump : S.dinoHurt.run[runFrame];
+      if (p.inv > 0 && !(p.dash > 0) && !this.L.retro && Math.floor(p.inv * 14) % 2 === 0 && !p.dead) img = p.duck ? S.dinoHurt.duck[runFrame] : !p.onGround && this.mode !== 'flip' ? S.dinoHurt.jump : S.dinoHurt.run[runFrame];
       ctx.save();
       const cx = p.x - (img.ax || 0) + img.width / 2, cy = flipped ? p.y + img.height / 2 - (img.ay || 0) : p.y - img.height / 2 + (img.ay || 0);
+      if (p.dash > 0) ctx.globalAlpha = .7 + .3 * Math.sin(this.time * 60);
+      // On the paper-white world a white hurt flash would vanish, so blink the dino instead
+      // and give pale species a soft dark edge so they read against the sky.
+      if (this.L.retro && p.inv > 0 && Math.floor(p.inv * 14) % 2 === 0 && !p.dead) ctx.globalAlpha = .3;
+      if (this.L.retro) { ctx.shadowColor = 'rgba(70,70,70,.45)'; ctx.shadowBlur = 2; ctx.shadowOffsetY = 1; }
       ctx.translate(Math.round(cx), Math.round(cy));
       if (p.rot) ctx.rotate(p.rot);
       if (flipped) ctx.scale(1, -1);
@@ -439,29 +468,31 @@
     }
     drawIntro(ctx) {
       const t = this.phaseT, W = this.W, H = this.H, L = this.L, P = L.palette;
+      // On the paper-white retro world the cinematic copy has to go dark.
+      const ink = L.retro ? '#535353' : '#fff', dim = L.retro ? 'rgba(83,83,83,.75)' : 'rgba(255,255,255,.85)';
       if (t < 2.1) {
         const a = clamp(t / .4, 0, 1) * clamp((2.1 - t) / .35, 0, 1);
         const slide = (1 - ease(t / .6)) * 40;
         this.text(ctx, `WORLD ${L.id}`, W / 2 - slide, H * .27, 9, P.accent, { alpha: a, spacing: 4 });
         const shown = L.name.slice(0, Math.floor(clamp((t - .15) / .5, 0, 1) * L.name.length));
-        this.text(ctx, shown, W / 2, H * .27 + 22, 26, '#fff', { alpha: a, spacing: 1 });
+        this.text(ctx, shown, W / 2, H * .27 + 22, 26, ink, { alpha: a, spacing: 1 });
         ctx.globalAlpha = a; ctx.fillStyle = P.accent; const lw = ease((t - .3) / .6) * 150; ctx.fillRect(W / 2 - lw / 2, H * .27 + 40, lw, 2); ctx.globalAlpha = 1;
-        this.text(ctx, L.tagline, W / 2 + slide, H * .27 + 54, 8, 'rgba(255,255,255,.85)', { alpha: a });
+        this.text(ctx, L.tagline, W / 2 + slide, H * .27 + 54, 8, dim, { alpha: a });
         if (L.boss) this.text(ctx, '☠ BOSS AHEAD ☠', W / 2, H * .27 + 72, 8, '#ff5470', { alpha: a * (.6 + .4 * Math.sin(t * 8)) });
-        this.text(ctx, `PLAYING AS ${this.dino.short}`, W / 2, H * .27 + (L.boss ? 88 : 74), 7, 'rgba(255,255,255,.6)', { alpha: a, spacing: 2 });
+        this.text(ctx, `PLAYING AS ${this.dino.short}`, W / 2, H * .27 + (L.boss ? 88 : 74), 7, dim, { alpha: a * .8, spacing: 2 });
       }
       const n = t < 2.0 ? null : t < 2.5 ? '3' : t < 3.0 ? '2' : t < 3.5 ? '1' : null;
-      if (n) { const k = ((t - 2) % .5) / .5; this.text(ctx, n, W / 2, H * .36, 54 * (1.6 - ease(k) * .6), '#fff', { alpha: 1 - k * .7, shadow: P.accent2 }); }
+      if (n) { const k = ((t - 2) % .5) / .5; this.text(ctx, n, W / 2, H * .36, 54 * (1.6 - ease(k) * .6), ink, { alpha: 1 - k * .7, shadow: P.accent2 }); }
     }
     drawBanner(ctx) {
       const b = this.banner, W = this.W, y = this.H * .3;
       const inT = ease(b.t / .3), outT = ease((b.t - b.dur + .3) / .3);
       const x = (1 - inT) * -W + outT * W;
       ctx.save(); ctx.translate(x, 0);
-      ctx.fillStyle = 'rgba(0,0,0,.62)'; ctx.fillRect(0, y - 16, W, b.sub ? 36 : 26);
+      ctx.fillStyle = this.L.retro ? 'rgba(247,247,247,.94)' : 'rgba(0,0,0,.62)'; ctx.fillRect(0, y - 16, W, b.sub ? 36 : 26);
       ctx.fillStyle = b.color; ctx.fillRect(0, y - 16, W, 2); ctx.fillRect(0, y + (b.sub ? 18 : 8), W, 2);
       this.text(ctx, b.title, W / 2, y - 3, 13, b.color, { spacing: 2 });
-      if (b.sub) this.text(ctx, b.sub.toUpperCase(), W / 2, y + 11, 7, '#fff', { spacing: 1 });
+      if (b.sub) this.text(ctx, b.sub.toUpperCase(), W / 2, y + 11, 7, this.L.retro ? '#6b6b6b' : '#fff', { spacing: 1 });
       ctx.restore();
     }
     drawBossWarning(ctx) {
