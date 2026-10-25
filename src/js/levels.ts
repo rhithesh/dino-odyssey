@@ -94,6 +94,26 @@ DR.LEVELS = [
   },
 ];
 
+// ENDLESS: one rule set (run, no finish line). The scenery rotates through the
+// classic run worlds every ENDLESS_SEG metres; speed and spawn density ramp to max
+// over the first ENDLESS_BASE.goal metres.
+DR.ENDLESS_CYCLE = [1, 2, 3, 4, 6, 9, 11];
+DR.ENDLESS_SEG = 250;
+DR.ENDLESS_BASE = {
+  endless: true, mode: 'run', goal: 2000, speed: [200, 300], gap: [1.0, 1.7], flyerFrom: .25,
+  boss: null, tide: false, alwaysOpen: false,
+};
+DR.endlessLevel = (i) => {
+  const w = DR.LEVELS.find(l => l.id === DR.ENDLESS_CYCLE[i % DR.ENDLESS_CYCLE.length]);
+  return Object.assign({}, w, DR.ENDLESS_BASE, { id: w.id, name: w.name, twist: w.twist, tagline: w.tagline, tips: w.tips, retro: !!w.retro, endlessSeg: i });
+};
+DR.ENDLESS_TIPS = [
+  'Shields block one hit — grab them before a rough patch.',
+  'Magnet pulls every coin in reach. Coins bank even when you crash.',
+  'Double score doubles every point for a few seconds.',
+  'Every 250 m the scenery changes. The rules do not.',
+];
+
 // Phases for the final world: each segment swaps the twist.
 DR.MIX_PHASES = [
   { mode: 'run', label: 'CLASSIC' },

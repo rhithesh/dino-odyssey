@@ -84,6 +84,15 @@
     const pr = Math.round(s.prog * 1000);
     if (pr !== hudCache.prog) { $('progFill').style.width = (s.prog * 100) + '%'; hudCache.prog = pr; }
     const bossOn = !!s.boss && (s.phase === 'boss' || s.phase === 'bossIntro');
+    $('progress').classList.toggle('hidden', bossOn || !!s.endless);
+    if (s.endless) {
+      const b = s.boosts, parts = [];
+      if (b.shield > 0) parts.push('◆ SHIELD');
+      if (b.magnet > 0) parts.push(`MAGNET ${b.magnet.toFixed(0)}s`);
+      if (b.dbl > 0) parts.push(`2× SCORE ${b.dbl.toFixed(0)}s`);
+      const txt = parts.join('  ');
+      if (txt !== hudCache.boost) { hudCache.boost = txt; $('boostRow').textContent = txt; }
+    }
     if (bossOn !== hudCache.bossOn) { $('bossBar').classList.toggle('hidden', !bossOn); $('progress').classList.toggle('hidden', bossOn); hudCache.bossOn = bossOn; }
     if (bossOn) { $('bossName').textContent = s.boss.name; $('bossFill').style.width = (s.boss.hp / s.boss.max * 100) + '%'; }
     if (s.mult !== hudCache.mult) {
@@ -121,7 +130,7 @@
   function startDemo() {
     const pool = LEVELS.filter(L => levelOpen(L) && !L.alwaysOpen && ['run'].includes(L.mode));
     const L = pool[(Math.random() * pool.length) | 0] || LEVELS[0];
-    current = null; document.body.classList.toggle('retro', !!L.retro);
+    current = null; document.body.classList.toggle('retro', !!L.retro); document.body.classList.remove('endless');
     game.load(L, { demo: true, dino: save.dino });
   }
   function toTitle() { show('scrTitle'); startDemo(); refreshTitle(); }
@@ -147,7 +156,7 @@
     hudCache = {};
     show(null);
     $('btnDash').classList.toggle('hidden', !dashOwned());
-    document.body.classList.toggle('retro', !!L.retro);
+    document.body.classList.toggle('retro', !!L.retro); document.body.classList.remove('endless');
     game.load(L, { quick, dino: save.dino, up: barsNow(save.dino) });
   }
 
@@ -179,6 +188,7 @@
 
   // ---------------- end of a run ----------------
   function onEnd(r) {
+    if (r.endless) return endlessOver(r);
     const L = LEVELS[r.level - 1];
     $('touch').classList.add('hidden');
     // Coins are banked win or lose; clearing a world adds a bonus.
@@ -461,12 +471,13 @@ pad($('btnDash'), () => game.dash(), () => {});
   on('btnOverShop', () => openDino(save.dino, 'scrLevels'));
   on('pauseBtn', pause);
   on('btnResume', resume);
-  on('btnRestart', () => { game.paused = false; DR.Audio.resume(); startLevel(current.id, true); });
+  on('btnRestart', () => { game.paused = false; DR.Audio.resume(); current && current.endless ? startEndless() : startLevel(current.id, true); });
   on('btnQuit', () => { game.paused = false; DR.Audio.resume(); buildLevels(); show('scrLevels'); startDemo(); });
   on('btnNext', () => startLevel(Math.min(current.id + 1, LEVELS.length)));
   on('btnReplay', () => startLevel(current.id, true));
   on('btnResWorlds', () => { buildLevels(); show('scrLevels'); startDemo(); });
-  on('btnRetry', () => startLevel(current.id, true));
+  on('btnRetry', () => current && current.endless ? startEndless() : startLevel(current.id, true));
+  on('btnEndless', startEndless);
   on('btnOverWorlds', () => { buildLevels(); show('scrLevels'); startDemo(); });
   // the pause button lives inside the pointer-transparent HUD
   $('pauseBtn').addEventListener('pointerdown', e => e.stopPropagation());

@@ -26,6 +26,7 @@
       <div id="bossName" class="mb-[3px] text-center text-[11px] font-extrabold tracking-[3px] text-[#ff5470] [text-shadow:0_0_8px_#ff0033]">BOSS</div>
       <div class="h-[9px] overflow-hidden rounded-[3px] bg-black/60 border border-[#ff5470]"><div id="bossFill" class="h-full w-full bg-gradient-to-r from-[#ff0033] to-[#ff7a45] transition-[width] duration-300 shadow-[0_0_12px_#ff0033]"></div></div>
     </div>
+    <div id="boostRow" class="absolute left-[14px] top-[92px] text-[10px] font-extrabold tracking-[1px] text-white [text-shadow:0_1px_0_#000]"></div>
     <div id="combo" class="absolute right-[14px] top-[92px] text-right text-[15px] font-black text-[var(--accent)] opacity-0 transition-opacity duration-200 [text-shadow:0_2px_0_#000,0_0_10px_rgba(255,207,74,.6)]"></div>
   </div>
 
@@ -46,6 +47,7 @@
     </div>
     <div class="flex w-[min(260px,85%)] flex-col gap-[10px]">
       <button class="cursor-pointer rounded-xl px-[14px] py-[13px] text-sm font-extrabold tracking-[2px] bg-gradient-to-b from-[#ffd65c] to-[#ff8a3d] text-[#2a1004] border border-[#fff3c4] shadow-[0_4px_0_#8a3510,0_0_24px_rgba(255,150,60,.35)] transition-transform duration-100 hover:brightness-110 hover:-translate-y-px active:translate-y-[3px]" id="btnContinue">▶ PLAY</button>
+      <button class="cursor-pointer rounded-xl px-[14px] py-[11px] text-sm font-extrabold tracking-[2px] bg-gradient-to-b from-[#7df9ff] to-[#2a9dff] text-[#04121f] border border-[#d6fbff] shadow-[0_4px_0_#0b4a7a,0_0_24px_rgba(125,249,255,.35)] transition-transform duration-100 hover:brightness-110 hover:-translate-y-px active:translate-y-[3px]" id="btnEndless">∞ ENDLESS · SCORE CHASE</button>
       <div class="flex gap-[10px]">
         <button class="flex-1 cursor-pointer rounded-xl px-[14px] py-[13px] text-sm font-extrabold tracking-[2px] bg-[rgba(20,16,32,.6)] border border-white/20 backdrop-blur-md shadow-[0_4px_0_rgba(0,0,0,.5)] transition-[transform,background,box-shadow] duration-150 hover:bg-white/15 hover:-translate-y-px active:translate-y-[3px]" id="btnLevels">LEVELS</button>
         <button class="flex-1 cursor-pointer rounded-xl px-[14px] py-[13px] text-sm font-extrabold tracking-[2px] bg-[rgba(20,16,32,.6)] border border-white/20 backdrop-blur-md shadow-[0_4px_0_rgba(0,0,0,.5)] transition-[transform,background,box-shadow] duration-150 hover:bg-white/15 hover:-translate-y-px active:translate-y-[3px]" id="btnDinos">DINO DEX</button>
@@ -144,7 +146,7 @@
   </section>
 
   <section id="scrOver" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-center gap-[18px] p-5 text-center animate-[screenIn_.35s_ease-out] bg-[radial-gradient(ellipse_at_center,rgba(10,8,18,.72),rgba(5,4,10,.92))] backdrop-blur-[3px]">
-    <div class="text-[30px] font-black tracking-[3px] text-[#ff3b5c] [text-shadow:0_3px_0_#4a0010,0_0_24px_rgba(255,40,80,.5)] animate-[titleSlam_.5s_cubic-bezier(.2,1.6,.4,1)]">EXTINCT</div>
+    <div id="overTitle" class="text-[30px] font-black tracking-[3px] text-[#ff3b5c] [text-shadow:0_3px_0_#4a0010,0_0_24px_rgba(255,40,80,.5)] animate-[titleSlam_.5s_cubic-bezier(.2,1.6,.4,1)]">EXTINCT</div>
     <div id="overStats" class="min-w-[220px] text-xs leading-[1.9]"></div>
     <div id="overTip" class="max-w-[280px] text-[11px] text-[var(--dim)]"></div>
     <div class="flex w-[min(260px,85%)] flex-col gap-[10px]">

@@ -45,6 +45,7 @@
 
     // ---------------- level lifecycle ----------------
     load(L, { demo = false, quick = false, dino = 'compy', up = null } = {}) {
+      if (L.endless) L = DR.endlessLevel(0);
       this.L = L; this.demo = demo; this.dinoId = dino; this.S = DR.Sprites.forLevel(L, dino);
       const D = DR.DINOS.find(d => d.id === dino) || DR.DINOS[0];
       this.dino = D; this.st = Object.assign({}, DR.DINO_BASE, D.stats);
@@ -57,6 +58,7 @@
       this.mixIdx = 0; this.darkOn = !!L.dark; this.fallersOn = L.mode !== 'mix' && !!L.fallers;
       Object.assign(this, {
         dist: 0, scroll: 0, speed: demo ? L.speed[0] : 0, penalty: 1, hearts: this.st.hearts, maxHearts: this.st.hearts, score: 0, coinN: 0, coinsSpawned: 0, bank: 0,
+        endless: !!L.endless, segIdx: 0, shieldN: 0, shieldHit: false, magnetT: 0, dblT: 0,
         closeN: 0, hits: 0, streak: 0, obs: [], coins: [], nextSpawn: L.speed[0] * 1.2, boss: null, bossDone: false,
         finishing: false, finish: null, banner: null, light: 0, lightT: 3 + Math.random() * 3, gustT: 7, gust: 0,
         shake: 0, hitstop: 0, slow: 1, zoom: demo ? 1 : 1.35, lb: demo ? 0 : 1, trail: [], runTime: 0, ceilA: L.mode === 'flip' ? 1 : 0,
@@ -134,6 +136,8 @@
       this.phaseT += realDt;
       this.shake = Math.max(0, this.shake - realDt * 30);
       p.inv = Math.max(0, p.inv - dt);
+      if (this.magnetT > 0) this.magnetT -= dt;
+      if (this.dblT > 0) this.dblT -= dt;
       if (p.dash > 0) { p.dash = Math.max(0, p.dash - dt); p.inv = Math.max(p.inv, .12); } else if (p.dashCd > 0) p.dashCd = Math.max(0, p.dashCd - dt);
       const live = this.live();
       const targetLb = ['intro', 'bossIntro', 'win', 'dead'].includes(this.phase) ? 1 : 0;
@@ -164,9 +168,10 @@
           this.runTime += dt;
           const dm = this.speed * dt / 10; this.dist += dm; this.score += dm * this.mult();
           if (L.mode === 'mix') this.mixUpdate(prog);
+          if (this.endless) this.endlessUpdate();
           if (!this.finishing) {
             this.spawnUpdate(dt);
-            if (this.dist >= L.goal) {
+            if (this.dist >= L.goal && !L.endless) {
               this.finishing = true;
               if (L.boss) { this.setPhase('bossIntro'); }
               else this.finish = { x: this.W + 20 };
@@ -281,7 +286,7 @@
       if (p.duck) return { x: p.x + 3, y: p.y - 9, w: 21, h: 9 };
       return { x: p.x + 4, y: p.y - 18, w: 12, h: 17 };
     }
-    mult() { return 1 + Math.min(6, Math.floor(this.streak / this.st.comboDiv)) * .5; }
+    mult() { return (1 + Math.min(6, Math.floor(this.streak / this.st.comboDiv)) * .5) * (this.dblT > 0 ? 2 : 1); }
     // A species perk saved the run: callout + sparkle.
     perkFx(text, color) {
       const p = this.p;
@@ -294,6 +299,13 @@
     damage(src) {
       const p = this.p;
       if (p.inv > 0 || p.dead || this.demo || this.phase === 'win' || this.phase === 'intro') return false;
+      if (this.shieldN > 0) {
+        this.shieldN--; this.shieldHit = true; p.inv = .8;
+        this.fx.ring(p.x + 10, p.y - 10 * p.g, '#7df9ff', 26, .35);
+        this.fx.text(p.x + 10, p.y - 30 * p.g, 'BLOCKED!', '#7df9ff', 9);
+        this.shake = Math.max(this.shake, 3); DR.Audio.sfx('close');
+        return false;
+      }
       this.hearts--; this.hits++; this.streak = 0; p.inv = this.st.inv;
       this.hitstop = .09; this.shake = 9; this.penalty = .8;
       this.fx.doFlash(.45, '#ff2040');
@@ -319,11 +331,24 @@
     end(won) {
       this.ended = true;
       const stars = won ? 1 + (this.coinsSpawned === 0 || this.coinN >= this.coinsSpawned * .7 ? 1 : 0) + (this.hits === 0 ? 1 : 0) : 0;
-      this.hooks.end && this.hooks.end({ won, level: this.L.id, score: Math.round(this.score), coins: this.coinN, coinsTotal: this.coinsSpawned, bank: Math.round(this.bank), close: this.closeN, hits: this.hits, time: this.runTime, dist: Math.round(this.dist), stars });
+      this.hooks.end && this.hooks.end({ won, endless: !!this.endless, level: this.L.id, score: Math.round(this.score), coins: this.coinN, coinsTotal: this.coinsSpawned, bank: Math.round(this.bank), close: this.closeN, hits: this.hits, time: this.runTime, dist: Math.round(this.dist), stars });
     }
     hudState() {
       return { dash: this.st.dashLvl ? { cd: this.p.dashCd, max: this.st.dashCd, on: this.p.dash > 0 } : null, hearts: this.hearts, maxHearts: this.maxHearts, score: Math.round(this.score), coins: this.coinN, prog: clamp(this.dist / this.L.goal, 0, 1), mult: this.mult(),
-        boss: this.boss && !this.boss.gone ? { name: this.boss.name, hp: this.boss.hp, max: this.boss.max } : null, phase: this.phase };
+        boss: this.boss && !this.boss.gone ? { name: this.boss.name, hp: this.boss.hp, max: this.boss.max } : null, phase: this.phase,
+        endless: !!this.endless, boosts: { shield: this.shieldN, magnet: this.magnetT, dbl: this.dblT } };
+    }
+    // Endless: when the run crosses into a new stretch, swap the scenery (not the rules).
+    endlessUpdate() {
+      const idx = Math.floor(this.dist / DR.ENDLESS_SEG);
+      if (idx === this.segIdx) return;
+      this.segIdx = idx;
+      const L = DR.endlessLevel(idx);
+      this.L = L; this.S = DR.Sprites.forLevel(L, this.dinoId);
+      this.darkOn = !!L.dark; this.fallersOn = !!L.fallers;
+      this.rebuild();
+      DR.Audio.playMusic(L.music);
+      this.showBanner(L.name, L.twist.split('—')[1]?.trim() || L.tagline, L.palette.accent, 1.8);
     }
     showBanner(title, sub, color, dur = 2.6) { this.banner = { title, sub, color, t: 0, dur }; }
 

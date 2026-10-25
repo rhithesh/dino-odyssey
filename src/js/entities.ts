@@ -15,6 +15,7 @@
     if (this.mode === 'swim') this.spawnSwim(d);
     else if (this.mode === 'flip') this.spawnFlip(d);
     else this.spawnRun(d);
+    if (this.endless && !this.demo && R() < .2) this.addBoost();
     if (this.hearts < this.maxHearts && !this.demo && R() < .045) this.obs.push({ kind: 'heart', x: this.W + 60, y: (this.mode === 'run' ? this.GY - 52 : (this.GY + (this.mode === 'flip' ? this.CY : this.SURF)) / 2), w: 7, h: 6, t: 0, glow: 22 });
   };
 
@@ -117,6 +118,26 @@
     this.coinsSpawned += 4;
     return o;
   };
+  // Endless boost pickup: shield (blocks one hit), magnet (pulls coins) or 2x score.
+  G.addBoost = function () {
+    const types = ['shield', 'magnet', 'double'];
+    this.obs.push({ kind: 'boost', bt: pick(types), x: this.W + 60, y: this.GY - 52, by: this.GY - 52, w: 9, h: 9, t: 0, glow: 22 });
+  };
+  G.takeBoost = function (kind, x, y) {
+    const cfg = {
+      shield: { label: 'SHIELD', color: '#7df9ff' },
+      magnet: { label: 'MAGNET', color: '#ffc400' },
+      double: { label: '2× SCORE', color: '#ff6bd6' },
+    }[kind];
+    if (kind === 'shield') this.shieldN = 1;
+    if (kind === 'magnet') this.magnetT = 8;
+    if (kind === 'double') this.dblT = 8;
+    this.fx.text(x, y - 8, cfg.label, cfg.color, 9, 1);
+    this.fx.ring(x + 4, y + 4, cfg.color, 26, .4);
+    this.fx.burst(x + 4, y + 4, 12, { color: [cfg.color, '#fff'], speed: 90, grav: 0, life: .4, glow: true });
+    DR.Audio.sfx('star');
+  };
+
   G.addFaller = function (landX, sub) {
     const ft = Math.sqrt(2 * (this.GY + 24) / 1000);
     const trigX = landX + this.speed * ft;
@@ -189,6 +210,10 @@
         case 'orb': o.y = o.by + Math.sin(o.t * 5) * 4;
           if (canHit && overlap({ x: pb.x - 3, y: pb.y - 3, w: pb.w + 6, h: pb.h + 6 }, { x: o.x - 7, y: o.y - 7, w: 14, h: 14 })) { this.obs.splice(i, 1); this.fireShot(); continue; }
           break;
+        case 'boost':
+          o.y = o.by + Math.sin(o.t * 3) * 2;
+          if (canHit && overlap(pb, { x: o.x - 3, y: o.y - 3, w: 15, h: 15 })) { this.obs.splice(i, 1); this.takeBoost(o.bt, o.x, o.y); continue; }
+          break;
         case 'heart':
           if (canHit && overlap(pb, { x: o.x - 2, y: o.y - 2, w: 11, h: 10 })) {
             this.obs.splice(i, 1); this.hearts = Math.min(this.maxHearts, this.hearts + 1); DR.Audio.sfx('heart');
@@ -206,7 +231,7 @@
           this.fx.burst(o.x + o.w / 2, o.y + o.h / 2, 24, { color: [this.L.palette.obstacle, '#fff'], speed: 180, life: .7, size: 2 });
           this.obs.splice(i, 1); continue;
         } else if (this.damage(o.kind)) { o.hit = true; if (o.kind === 'proj' || o.kind === 'faller') o.x = -999; }
-        else o.grazed = true; // overlapped while invincible (i-frames / dash): no free combo for it
+        else { o.grazed = true; if (this.shieldHit) { o.hit = true; this.shieldHit = false; } } // overlapped while invincible: no free combo
       } else if (hb && !o.passed) {
         if (hb.x < pb.x + pb.w + 4 && hb.x + hb.w > pb.x - 4) {
           const gap = Math.max(hb.y - (pb.y + pb.h), pb.y - (hb.y + hb.h));
@@ -223,7 +248,7 @@
     // coins
     for (let i = this.coins.length - 1; i >= 0; i--) {
       const c = this.coins[i]; c.x -= sp; c.t += dt;
-      const m = this.st.magnet;
+      const m = this.st.magnet + (this.magnetT > 0 ? 70 : 0);
       if (canHit && !this.demo && overlap({ x: pb.x - m, y: pb.y - m, w: pb.w + m * 2, h: pb.h + m * 2 }, { x: c.x, y: c.y, w: 6, h: 6 })) {
         this.coins.splice(i, 1); this.coinN++; const worth = this.st.coinMul * (1 + this.st.coinBonus); this.bank += worth; this.score += 10 * worth * this.mult();
         if (worth > 1.01) this.fx.text(c.x + 3, c.y - 4, '+' + (Math.round(worth * 10) / 10), '#ffc400', 7, .5); DR.Audio.sfx('coin');
@@ -443,6 +468,15 @@
           ctx.globalCompositeOperation = 'lighter';
           for (let i = 0; i < o.w; i++) { const hh = o.h * (1 - Math.abs(i - o.w / 2) / (o.w / 2)) * (.8 + .2 * Math.sin(t * 30 + i)); ctx.fillStyle = i % 3 ? '#ff6a00' : '#ffd000'; ctx.fillRect(x + i, GY - hh, 1, hh); }
           ctx.globalCompositeOperation = 'source-over';
+          break;
+        }
+        case 'boost': {
+          const col = o.bt === 'shield' ? '#7df9ff' : o.bt === 'magnet' ? '#ffc400' : '#ff6bd6';
+          ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .35; ctx.fillStyle = col;
+          ctx.beginPath(); ctx.arc(x + 4, y + 4, 9, 0, 6.3); ctx.fill();
+          ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+          ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(x + 4, y); ctx.lineTo(x + 9, y + 4); ctx.lineTo(x + 4, y + 9); ctx.lineTo(x, y + 4); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = '#fff'; ctx.fillRect(x + 3, y + 3, 2, 2);
           break;
         }
         case 'heart':
