@@ -157,7 +157,7 @@
       const mid = mk(LW, H), mg = mid.getContext('2d'), R = rng(42);
       const tree = (x, base, hh) => {
         mg.fillStyle = P.mid; mg.fillRect(x, base - hh, 3, hh);
-        const branch = (bx, by, len, dir, d) => { if (d > 3 || len < 2) return; let px = bx, py = by; for (let i = 0; i < len; i++) { px += dir; py -= (i % 2); mg.fillRect(px, py, 1 + (d < 2), 1); } branch(px, py, len * .6 | 0, dir, d + 1); branch(px, py, len * .5 | 0, -dir, d + 2); };
+        const branch = (bx, by, len, dir, d) => { if (d > 3 || len < 2) return; let px = bx, py = by; for (let i = 0; i < len; i++) { px += dir; py -= (i % 2); mg.fillRect(px, py, 1 + Number(d < 2), 1); } branch(px, py, len * .6 | 0, dir, d + 1); branch(px, py, len * .5 | 0, -dir, d + 2); };
         for (let b = 0; b < 4; b++) branch(x + 1, base - hh + 4 + b * 6, 8 + R() * 8 | 0, b % 2 ? 1 : -1, 0);
       };
       for (let i = 0; i < 9; i++) tree(R() * LW | 0, GY, 30 + R() * 40 | 0);

@@ -10,6 +10,8 @@
   const STEP_PX = 9; // world px scrolled per walk frame (4 frames = one full stride)
 
   class Game {
+    [key: string]: any;
+
     constructor(canvas, hooks) {
       this.c = canvas; this.ctx = canvas.getContext('2d'); this.hooks = hooks;
       this.keys = { jump: false, duck: false };
@@ -150,7 +152,7 @@
 
       // phases
       switch (this.phase) {
-        case 'demo': this.autopilot(dt); this.dist += this.speed * dt / 10; if (this.dist > L.goal * .9) this.dist = 0; this.spawnUpdate(dt); break;
+        case 'demo': this.autopilot(); this.dist += this.speed * dt / 10; if (this.dist > L.goal * .9) this.dist = 0; this.spawnUpdate(dt); break;
         case 'intro': {
           this.zoom = lerp(1.35, 1, ease(this.phaseT / 2.4));
           p.x = lerp(-40, 50, ease((this.phaseT - .6) / 1.6));

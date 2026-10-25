@@ -92,7 +92,7 @@
   G.addFlyer = function (x, height) {
     const L = this.L, img = this.S.flyer[0], GY = this.GY;
     const bottom = { low: GY - 3, mid: GY - 13, high: GY - 28 }[height];
-    const o = { kind: 'flyer', x, y: bottom - img.height, w: img.width, h: img.height, t: 0, vx: 35 + R() * 25, ph: R() * 6 };
+    const o: any = { kind: 'flyer', x, y: bottom - img.height, w: img.width, h: img.height, t: 0, vx: 35 + R() * 25, ph: R() * 6 };
     if (L.droneBob && R() < .7) { o.by = GY - 14 - img.height; o.bob = 11; o.bobF = 3 + R() * 1.5; o.vx = 20; }
     if (L.ghostPhase) { o.phase = true; o.alpha = 1; o.glow = 18; }
     this.obs.push(o);

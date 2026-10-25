@@ -574,7 +574,7 @@ DR.DINOS = [
 
 // Unlock check against save data.
 DR.dinoUnlocked = function (D, save) {
-  const u = D.unlock, stars = Object.values(save.stars || {}).reduce((a, b) => a + b, 0);
+  const u = D.unlock, stars = Object.values(save.stars || {}).reduce<number>((a, b) => a + Number(b), 0);
   if (u.start) return true;
   if (u.world) return (save.stars || {})[u.world] > 0;
   if (u.stars) return stars >= u.stars;

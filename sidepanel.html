@@ -1,108 +1,108 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="h-full">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Dino Odyssey</title>
   <link rel="stylesheet" href="sidepanel.css">
 </head>
-<body>
-<div id="app">
-  <canvas id="game"></canvas>
-  <div id="veil" class="hidden"></div>
+<body class="h-full overflow-hidden bg-[#0b0910] font-mono text-[#f4f1ea] select-none">
+<div id="app" class="relative h-screen w-screen overflow-hidden">
+  <canvas id="game" class="absolute inset-0 block h-full w-full [image-rendering:pixelated]"></canvas>
+  <div id="veil" class="hidden absolute inset-0 z-[1] bg-[rgba(6,5,13,.5)]"></div>
 
   <!-- In-game HUD -->
-  <div id="hud" class="hidden">
-    <div class="hud-top">
-      <div id="hearts"></div>
-      <div class="hud-mid">
-        <div id="score">0</div>
-        <div id="coins"><span class="coin-ico"></span><span id="coinCount">0</span></div>
+  <div id="hud" class="hidden absolute inset-0 pointer-events-none p-[10px_12px]">
+    <div class="flex items-center justify-between gap-2">
+      <div id="hearts" class="flex min-w-[70px] gap-1 text-xl"></div>
+      <div class="text-center">
+        <div id="score" class="text-[22px] font-extrabold tracking-[2px] [text-shadow:0_2px_0_#000,0_0_12px_rgba(0,0,0,.6)]">0</div>
+        <div id="coins" class="flex items-center justify-center gap-1 text-xs text-[var(--accent)] [text-shadow:0_1px_0_#000]"><span class="inline-block h-[9px] w-[9px] rounded-full bg-[radial-gradient(circle_at_35%_35%,#fff6b0,#ffc400_55%,#b37a00)] shadow-[0_0_6px_#ffc400]"></span><span id="coinCount">0</span></div>
       </div>
-      <button id="pauseBtn" class="icon-btn" title="Pause (P / Esc)">❚❚</button>
+      <button id="pauseBtn" class="icon-btn pointer-events-auto h-[34px] w-[34px] rounded-[10px] text-[13px] font-extrabold bg-black/35 border border-white/20 backdrop-blur-[4px] hover:bg-white/15" title="Pause (P / Esc)">❚❚</button>
     </div>
-    <div id="progress"><div id="progFill"></div><div id="progFlag">⚑</div></div>
-    <div id="bossBar" class="hidden">
-      <div id="bossName">BOSS</div>
-      <div class="bar"><div id="bossFill"></div></div>
+    <div id="progress" class="relative mx-1 mt-[10px] h-[6px] rounded bg-black/40 border border-white/20"><div id="progFill" class="h-full w-0 rounded bg-gradient-to-r from-[var(--accent2)] to-[var(--accent)] shadow-[0_0_10px_var(--accent)]"></div><div id="progFlag" class="absolute -right-[6px] -top-[9px] text-sm [text-shadow:0_1px_0_#000]">⚑</div></div>
+    <div id="bossBar" class="hidden mx-1 mt-[10px]">
+      <div id="bossName" class="mb-[3px] text-center text-[11px] font-extrabold tracking-[3px] text-[#ff5470] [text-shadow:0_0_8px_#ff0033]">BOSS</div>
+      <div class="h-[9px] overflow-hidden rounded-[3px] bg-black/60 border border-[#ff5470]"><div id="bossFill" class="h-full w-full bg-gradient-to-r from-[#ff0033] to-[#ff7a45] transition-[width] duration-300 shadow-[0_0_12px_#ff0033]"></div></div>
     </div>
-    <div id="combo"></div>
+    <div id="combo" class="absolute right-[14px] top-[92px] text-right text-[15px] font-black text-[var(--accent)] opacity-0 transition-opacity duration-200 [text-shadow:0_2px_0_#000,0_0_10px_rgba(255,207,74,.6)]"></div>
   </div>
 
   <!-- Touch / mouse controls -->
-  <div id="touch" class="hidden">
-    <button id="btnDuck" class="pad" aria-label="Duck">▼</button>
-    <button id="btnDash" class="pad dash hidden" aria-label="Dash"><i id="padDashFill"></i><b>≫</b></button>
-    <button id="btnJump" class="pad" aria-label="Jump">▲</button>
+  <div id="touch" class="hidden absolute inset-x-0 bottom-[14px] flex justify-between px-4 pointer-events-none">
+    <button id="btnDuck" class="pad pointer-events-auto h-16 w-16 rounded-full text-[22px] bg-black/30 border-2 border-white/30 backdrop-blur-[3px] transition-[transform,background] duration-100 active:scale-[.92] active:bg-white/20" aria-label="Duck">▼</button>
+    <button id="btnDash" class="pad hidden pointer-events-auto relative mb-1 h-16 w-16 overflow-hidden rounded-full text-[22px] bg-black/30 border-2 border-white/30 backdrop-blur-[3px] transition-[transform,background] duration-100 active:scale-[.92] active:bg-white/20" aria-label="Dash"><i id="padDashFill" class="absolute inset-x-0 bottom-0 h-0 bg-white/30"></i><b class="relative z-[1]">≫</b></button>
+    <button id="btnJump" class="pad pointer-events-auto h-16 w-16 rounded-full text-[22px] bg-black/30 border-2 border-white/30 backdrop-blur-[3px] transition-[transform,background] duration-100 active:scale-[.92] active:bg-white/20" aria-label="Jump">▲</button>
   </div>
 
   <!-- Screens -->
-  <section id="scrTitle" class="screen">
-    <div class="offline-chip" id="netChip"><span class="dot"></span><span id="netText">No internet? No problem.</span></div>
-    <div class="logo">
-      <div class="logo-small">NO INTERNET</div>
-      <div class="logo-big">DINO<br>ODYSSEY</div>
-      <div class="logo-sub">11 worlds · 3 bosses · 19 dinos</div>
+  <section id="scrTitle" class="absolute inset-0 z-[2] flex flex-col items-center justify-center gap-[18px] p-5 text-center animate-[screenIn_.35s_ease-out]">
+    <div class="absolute top-[14px] flex items-center gap-[6px] rounded-full px-[10px] py-[5px] text-[10px] tracking-wide bg-black/40 border border-white/20" id="netChip"><span class="h-[7px] w-[7px] rounded-full bg-[#4ade80] shadow-[0_0_8px_#4ade80]"></span><span id="netText">No internet? No problem.</span></div>
+    <div class="-mt-[30px]">
+      <div class="text-[11px] tracking-[6px] text-[var(--dim)]">NO INTERNET</div>
+      <div class="my-2 text-[46px] leading-[.95] font-black tracking-[3px] bg-gradient-to-b from-[#fff6d5] via-[#ffcf4a] to-[#ff6b3d] bg-clip-text text-transparent [filter:drop-shadow(0_4px_0_#3a1408)_drop-shadow(0_0_22px_rgba(255,140,60,.45))] animate-[logoFloat_3s_ease-in-out_infinite]">DINO<br>ODYSSEY</div>
+      <div class="text-[11px] tracking-wide text-[var(--dim)]">11 worlds · 3 bosses · 19 dinos</div>
     </div>
-    <div class="menu">
-      <button class="btn primary" id="btnContinue">▶ PLAY</button>
-      <div class="row">
-        <button class="btn" id="btnLevels">LEVELS</button>
-        <button class="btn" id="btnDinos">DINO DEX</button>
+    <div class="flex w-[min(260px,85%)] flex-col gap-[10px]">
+      <button class="cursor-pointer rounded-xl px-[14px] py-[13px] text-sm font-extrabold tracking-[2px] bg-gradient-to-b from-[#ffd65c] to-[#ff8a3d] text-[#2a1004] border border-[#fff3c4] shadow-[0_4px_0_#8a3510,0_0_24px_rgba(255,150,60,.35)] transition-transform duration-100 hover:brightness-110 hover:-translate-y-px active:translate-y-[3px]" id="btnContinue">▶ PLAY</button>
+      <div class="flex gap-[10px]">
+        <button class="flex-1 cursor-pointer rounded-xl px-[14px] py-[13px] text-sm font-extrabold tracking-[2px] bg-[rgba(20,16,32,.6)] border border-white/20 backdrop-blur-md shadow-[0_4px_0_rgba(0,0,0,.5)] transition-[transform,background,box-shadow] duration-150 hover:bg-white/15 hover:-translate-y-px active:translate-y-[3px]" id="btnLevels">LEVELS</button>
+        <button class="flex-1 cursor-pointer rounded-xl px-[14px] py-[13px] text-sm font-extrabold tracking-[2px] bg-[rgba(20,16,32,.6)] border border-white/20 backdrop-blur-md shadow-[0_4px_0_rgba(0,0,0,.5)] transition-[transform,background,box-shadow] duration-150 hover:bg-white/15 hover:-translate-y-px active:translate-y-[3px]" id="btnDinos">DINO DEX</button>
       </div>
-      <div class="equipped" id="equipped"></div>
-      <button class="btn" id="btnUpgrades">DINO UPGRADES</button>
-      <div class="row">
-        <button class="btn small" id="btnSound">♪ SOUND: ON</button>
-        <button class="btn small" id="btnHelp">? HOW TO</button>
+      <div id="equipped" class="mt-0.5 text-center text-[10px] tracking-[2px] opacity-75"></div>
+      <button class="cursor-pointer rounded-xl px-[14px] py-[13px] text-sm font-extrabold tracking-[2px] bg-[rgba(20,16,32,.6)] border border-white/20 backdrop-blur-md shadow-[0_4px_0_rgba(0,0,0,.5)] transition-[transform,background,box-shadow] duration-150 hover:bg-white/15 hover:-translate-y-px active:translate-y-[3px]" id="btnUpgrades">DINO UPGRADES</button>
+      <div class="flex gap-[10px]">
+        <button class="flex-1 cursor-pointer rounded-xl px-2 py-[9px] text-[11px] font-extrabold tracking-wide bg-[rgba(20,16,32,.6)] border border-white/20 backdrop-blur-md shadow-[0_4px_0_rgba(0,0,0,.5)] transition-[transform,background,box-shadow] duration-150 hover:bg-white/15 active:translate-y-[3px]" id="btnSound">♪ SOUND: ON</button>
+        <button class="flex-1 cursor-pointer rounded-xl px-2 py-[9px] text-[11px] font-extrabold tracking-wide bg-[rgba(20,16,32,.6)] border border-white/20 backdrop-blur-md shadow-[0_4px_0_rgba(0,0,0,.5)] transition-[transform,background,box-shadow] duration-150 hover:bg-white/15 active:translate-y-[3px]" id="btnHelp">? HOW TO</button>
       </div>
     </div>
-    <div class="hint">Click here first, then press <kbd>SPACE</kbd></div>
+    <div class="absolute bottom-[18px] text-[11px] text-[var(--dim)] animate-[blink_1.6s_steps(2)_infinite]">Click here first, then press <kbd class="inline-block rounded px-[6px] py-px text-[.85em] bg-white/10 border border-white/25 border-b-[3px]">SPACE</kbd></div>
   </section>
 
-  <section id="scrLevels" class="screen hidden">
-    <div class="screen-head">
-      <button class="icon-btn" id="btnBackLevels">←</button>
-      <h2>SELECT WORLD</h2>
-      <div id="totalStars" class="stars-total">★ 0/24</div>
+  <section id="scrLevels" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-start gap-[18px] px-0 pt-[60px] pb-4 text-center overflow-y-auto animate-[screenIn_.35s_ease-out]">
+    <div class="absolute inset-x-0 top-0 z-[2] flex items-center justify-between p-3 bg-gradient-to-b from-[rgba(5,4,10,.92)] to-[rgba(5,4,10,.35)]">
+      <button class="icon-btn pointer-events-auto h-[34px] w-[34px] rounded-[10px] text-[13px] font-extrabold bg-black/35 border border-white/20 backdrop-blur-[4px] hover:bg-white/15" id="btnBackLevels">←</button>
+      <h2 class="m-0 text-[15px] tracking-[4px]">SELECT WORLD</h2>
+      <div id="totalStars" class="min-w-[34px] text-xs text-[var(--accent)]">★ 0/24</div>
     </div>
-    <button class="dex-link" id="btnLevelsDex"></button>
-    <div id="levelGrid"></div>
+    <button id="btnLevelsDex" class="mb-[10px] w-full max-w-[440px] cursor-pointer rounded-[10px] px-3 py-2 text-left text-[11px] tracking-wide text-white bg-white/5 border border-dashed border-white/25 hover:bg-white/10"></button>
+    <div id="levelGrid" class="flex w-full max-w-[520px] flex-col gap-[10px]"></div>
   </section>
 
-  <section id="scrDex" class="screen hidden">
-    <div class="screen-head">
-      <button class="icon-btn" id="btnBackDex">←</button>
-      <h2>DINO DEX</h2>
-      <div id="dexCount" class="stars-total">1/19</div>
+  <section id="scrDex" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-start gap-[18px] px-0 pt-[60px] pb-4 text-center overflow-y-auto animate-[screenIn_.35s_ease-out]">
+    <div class="absolute inset-x-0 top-0 z-[2] flex items-center justify-between p-3 bg-gradient-to-b from-[rgba(5,4,10,.92)] to-[rgba(5,4,10,.35)]">
+      <button class="icon-btn pointer-events-auto h-[34px] w-[34px] rounded-[10px] text-[13px] font-extrabold bg-black/35 border border-white/20 backdrop-blur-[4px] hover:bg-white/15" id="btnBackDex">←</button>
+      <h2 class="m-0 text-[15px] tracking-[4px]">DINO DEX</h2>
+      <div id="dexCount" class="min-w-[34px] text-xs text-[var(--accent)]">1/19</div>
     </div>
-    <div id="dexGrid"></div>
-    <p class="dex-foot">* Not technically dinosaurs, but we let them in anyway.</p>
+    <div id="dexGrid" class="grid w-full max-w-[520px] grid-cols-[repeat(auto-fill,minmax(118px,1fr))] gap-2"></div>
+    <p class="mt-3 text-[9px] opacity-50">* Not technically dinosaurs, but we let them in anyway.</p>
   </section>
 
-  <section id="scrDino" class="screen hidden">
-    <div class="screen-head">
-      <button class="icon-btn" id="btnBackDino">←</button>
-      <h2>DINO</h2>
-      <div id="wallet" class="wallet"><span class="coin-ico"></span><span id="walletN">0</span></div>
+  <section id="scrDino" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-start gap-1.5 px-[14px] pt-[60px] pb-[18px] text-center overflow-y-auto animate-[screenIn_.35s_ease-out]">
+    <div class="absolute inset-x-0 top-0 z-[2] flex items-center justify-between p-3 bg-gradient-to-b from-[rgba(5,4,10,.92)] to-[rgba(5,4,10,.35)]">
+      <button class="icon-btn pointer-events-auto h-[34px] w-[34px] rounded-[10px] text-[13px] font-extrabold bg-black/35 border border-white/20 backdrop-blur-[4px] hover:bg-white/15" id="btnBackDino">←</button>
+      <h2 class="m-0 text-[15px] tracking-[4px]">DINO</h2>
+      <div id="wallet" class="flex min-w-[52px] items-center justify-end gap-[5px] text-sm font-black text-[var(--accent)]"><span class="h-[9px] w-[9px] rounded-full bg-[radial-gradient(circle_at_35%_35%,#fff6b0,#ffc400_55%,#b37a00)] shadow-[0_0_6px_#ffc400]"></span><span id="walletN">0</span></div>
     </div>
-    <div class="dino-hero"><canvas id="dpCanvas" width="300" height="190"></canvas></div>
-    <div class="dp-name" id="dpName"></div>
-    <div class="dp-power" id="dpPower"></div>
-    <div class="dp-era" id="dpEra"></div>
-    <div class="dp-perk" id="dpPerk"></div>
-    <button class="btn" id="dpEquip">EQUIP</button>
-    <div class="shop-group">POWERS · 🪙 = +1 BAR</div>
-    <div id="dpSkills"></div>
+    <div class="w-full max-w-[360px] bg-[radial-gradient(ellipse_at_50%_80%,rgba(255,207,74,.16),transparent_65%)] pt-1"><canvas id="dpCanvas" class="mx-auto block h-[190px] w-[300px] cursor-grab [image-rendering:pixelated] [touch-action:none] active:cursor-grabbing" width="300" height="190"></canvas></div>
+    <div class="mt-1 text-xl font-black tracking-[2px]" id="dpName"></div>
+    <div class="text-[13px] tracking-[3px] text-[var(--accent)] [text-shadow:0_0_8px_rgba(255,207,74,.5)]" id="dpPower"></div>
+    <div class="max-w-[340px] text-[10px] opacity-65" id="dpEra"></div>
+    <div class="mb-1 text-[11px] text-[#7df9a8]" id="dpPerk"></div>
+    <button class="w-full max-w-[360px] cursor-pointer rounded-xl px-[14px] py-[13px] text-sm font-extrabold tracking-[2px] bg-[rgba(20,16,32,.6)] border border-white/20 backdrop-blur-md shadow-[0_4px_0_rgba(0,0,0,.5)] transition-[transform,background,box-shadow] duration-150 hover:bg-white/15" id="dpEquip">EQUIP</button>
+    <div class="mt-[10px] mx-[2px] text-[10px] tracking-[4px] text-[var(--accent)] opacity-85">POWERS · 🪙 = +1 BAR</div>
+    <div id="dpSkills" class="flex w-full max-w-[440px] flex-col gap-[7px] text-left"></div>
   </section>
 
-  <section id="scrHelp" class="screen hidden">
-    <div class="screen-head">
-      <button class="icon-btn" id="btnBackHelp">←</button>
-      <h2>HOW TO PLAY</h2>
+  <section id="scrHelp" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-center gap-[18px] p-5 text-center animate-[screenIn_.35s_ease-out] bg-[rgba(5,4,10,.82)]">
+    <div class="absolute inset-x-0 top-0 z-[2] flex items-center justify-between p-3 bg-gradient-to-b from-[rgba(5,4,10,.92)] to-[rgba(5,4,10,.35)]">
+      <button class="icon-btn pointer-events-auto h-[34px] w-[34px] rounded-[10px] text-[13px] font-extrabold bg-black/35 border border-white/20 backdrop-blur-[4px] hover:bg-white/15" id="btnBackHelp">←</button>
+      <h2 class="m-0 text-[15px] tracking-[4px]">HOW TO PLAY</h2>
       <div></div>
     </div>
-    <div class="help">
+    <div class="w-full max-w-[400px] rounded-[14px] border border-white/15 bg-black/55 p-4 text-left text-xs leading-relaxed [&_p]:my-[6px] [&_hr]:my-[10px] [&_hr]:border-0 [&_hr]:border-t [&_hr]:border-dashed [&_hr]:border-white/20">
       <p><kbd>SPACE</kbd> / <kbd>↑</kbd> / tap — <b>Jump</b> (hold for higher)</p>
       <p><kbd>↓</kbd> — <b>Duck</b> / fast-fall</p>
       <p><kbd>SHIFT</kbd> / <kbd>→</kbd> — <b>Dash</b> (buy it in DINO UPGRADES)</p>
@@ -112,51 +112,51 @@
       <p>Clear worlds and earn ★ to unlock <b>19 dinosaurs</b>, each with its own strengths.</p>
       <p>Spend coins in <b>DINO UPGRADES</b> on 4 powers per dino: Spring Legs, Thick Hide, <b>Double Jump</b> and <b>Dash</b>.</p>
       <p>Dodge things by a hair for <b>CLOSE CALL</b> bonuses that build your combo.</p>
-      <p>Bosses throw <b class="glow">glowing orbs</b> — grab them to fire back!</p>
+      <p>Bosses throw <b class="text-[#7df9ff] [text-shadow:0_0_8px_#7df9ff]">glowing orbs</b> — grab them to fire back!</p>
       <hr>
       <p>★ Clear the world &nbsp;★★ Grab 70% of coins &nbsp;★★★ Take no damage</p>
-      <p class="dim">Every world bends the rules. Watch the twist banner.</p>
+      <p class="text-[var(--dim)]">Every world bends the rules. Watch the twist banner.</p>
     </div>
   </section>
 
-  <section id="scrPause" class="screen dim-bg hidden">
-    <h2 class="big">PAUSED</h2>
-    <div class="menu">
-      <button class="btn primary" id="btnResume">▶ RESUME</button>
-      <button class="btn" id="btnRestart">↻ RESTART</button>
-      <button class="btn" id="btnQuit">⌂ WORLDS</button>
+  <section id="scrPause" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-center gap-[18px] p-5 text-center animate-[screenIn_.35s_ease-out] bg-[radial-gradient(ellipse_at_center,rgba(10,8,18,.72),rgba(5,4,10,.92))] backdrop-blur-[3px]">
+    <h2 class="m-0 text-[34px] tracking-[6px]">PAUSED</h2>
+    <div class="flex w-[min(260px,85%)] flex-col gap-[10px]">
+      <button class="cursor-pointer rounded-xl px-[14px] py-[13px] text-sm font-extrabold tracking-[2px] bg-gradient-to-b from-[#ffd65c] to-[#ff8a3d] text-[#2a1004] border border-[#fff3c4] shadow-[0_4px_0_#8a3510,0_0_24px_rgba(255,150,60,.35)]" id="btnResume">▶ RESUME</button>
+      <button class="cursor-pointer rounded-xl px-[14px] py-[13px] text-sm font-extrabold tracking-[2px] bg-[rgba(20,16,32,.6)] border border-white/20 backdrop-blur-md shadow-[0_4px_0_rgba(0,0,0,.5)]" id="btnRestart">↻ RESTART</button>
+      <button class="cursor-pointer rounded-xl px-[14px] py-[13px] text-sm font-extrabold tracking-[2px] bg-[rgba(20,16,32,.6)] border border-white/20 backdrop-blur-md shadow-[0_4px_0_rgba(0,0,0,.5)]" id="btnQuit">⌂ WORLDS</button>
     </div>
   </section>
 
-  <section id="scrResult" class="screen dim-bg hidden">
-    <div class="result-title" id="resTitle">WORLD CLEAR!</div>
-    <div class="result-stars" id="resStars"><span>★</span><span>★</span><span>★</span></div>
-    <div class="result-stats" id="resStats"></div>
-    <div class="unlock hidden" id="resUnlock"></div>
-    <div class="menu">
-      <button class="btn primary" id="btnNext">NEXT WORLD ▶</button>
-      <button class="btn" id="btnReplay">↻ REPLAY</button>
-      <div class="row">
-        <button class="btn small" id="btnResShop">UPGRADES</button>
-        <button class="btn small" id="btnResWorlds">⌂ WORLDS</button>
+  <section id="scrResult" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-center gap-[18px] p-5 text-center animate-[screenIn_.35s_ease-out] bg-[radial-gradient(ellipse_at_center,rgba(10,8,18,.72),rgba(5,4,10,.92))] backdrop-blur-[3px]">
+    <div class="text-[30px] font-black tracking-[3px] text-[var(--accent)] [text-shadow:0_3px_0_#5a2a00,0_0_24px_rgba(255,200,60,.5)] animate-[titleSlam_.5s_cubic-bezier(.2,1.6,.4,1)]" id="resTitle">WORLD CLEAR!</div>
+    <div id="resStars" class="flex gap-[10px] text-[44px]"><span class="scale-0 text-white/15">★</span><span class="scale-0 text-white/15">★</span><span class="scale-0 text-white/15">★</span></div>
+    <div id="resStats" class="min-w-[220px] text-xs leading-[1.9]"></div>
+    <div class="hidden my-[4px] mb-[10px] flex items-center gap-[10px] rounded-xl border border-[rgba(255,207,74,.5)] bg-gradient-to-r from-[rgba(255,207,74,.18)] to-[rgba(255,207,74,.04)] px-3 py-2 animate-[unlockIn_.5s_cubic-bezier(.2,1.6,.4,1)_both] [animation-delay:1.6s]" id="resUnlock"></div>
+    <div class="flex w-[min(260px,85%)] flex-col gap-[10px]">
+      <button class="cursor-pointer rounded-xl px-[14px] py-[13px] text-sm font-extrabold tracking-[2px] bg-gradient-to-b from-[#ffd65c] to-[#ff8a3d] text-[#2a1004] border border-[#fff3c4] shadow-[0_4px_0_#8a3510,0_0_24px_rgba(255,150,60,.35)]" id="btnNext">NEXT WORLD ▶</button>
+      <button class="cursor-pointer rounded-xl px-[14px] py-[13px] text-sm font-extrabold tracking-[2px] bg-[rgba(20,16,32,.6)] border border-white/20 backdrop-blur-md shadow-[0_4px_0_rgba(0,0,0,.5)]" id="btnReplay">↻ REPLAY</button>
+      <div class="flex gap-[10px]">
+        <button class="flex-1 cursor-pointer rounded-xl px-2 py-[9px] text-[11px] font-extrabold tracking-wide bg-[rgba(20,16,32,.6)] border border-white/20 backdrop-blur-md shadow-[0_4px_0_rgba(0,0,0,.5)]" id="btnResShop">UPGRADES</button>
+        <button class="flex-1 cursor-pointer rounded-xl px-2 py-[9px] text-[11px] font-extrabold tracking-wide bg-[rgba(20,16,32,.6)] border border-white/20 backdrop-blur-md shadow-[0_4px_0_rgba(0,0,0,.5)]" id="btnResWorlds">⌂ WORLDS</button>
       </div>
     </div>
   </section>
 
-  <section id="scrOver" class="screen dim-bg hidden">
-    <div class="result-title red">EXTINCT</div>
-    <div class="result-stats" id="overStats"></div>
-    <div class="tip" id="overTip"></div>
-    <div class="menu">
-      <button class="btn primary" id="btnRetry">↻ TRY AGAIN</button>
-      <div class="row">
-        <button class="btn small" id="btnOverShop">UPGRADES</button>
-        <button class="btn small" id="btnOverWorlds">⌂ WORLDS</button>
+  <section id="scrOver" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-center gap-[18px] p-5 text-center animate-[screenIn_.35s_ease-out] bg-[radial-gradient(ellipse_at_center,rgba(10,8,18,.72),rgba(5,4,10,.92))] backdrop-blur-[3px]">
+    <div class="text-[30px] font-black tracking-[3px] text-[#ff3b5c] [text-shadow:0_3px_0_#4a0010,0_0_24px_rgba(255,40,80,.5)] animate-[titleSlam_.5s_cubic-bezier(.2,1.6,.4,1)]">EXTINCT</div>
+    <div id="overStats" class="min-w-[220px] text-xs leading-[1.9]"></div>
+    <div id="overTip" class="max-w-[280px] text-[11px] text-[var(--dim)]"></div>
+    <div class="flex w-[min(260px,85%)] flex-col gap-[10px]">
+      <button class="cursor-pointer rounded-xl px-[14px] py-[13px] text-sm font-extrabold tracking-[2px] bg-gradient-to-b from-[#ffd65c] to-[#ff8a3d] text-[#2a1004] border border-[#fff3c4] shadow-[0_4px_0_#8a3510,0_0_24px_rgba(255,150,60,.35)]" id="btnRetry">↻ TRY AGAIN</button>
+      <div class="flex gap-[10px]">
+        <button class="flex-1 cursor-pointer rounded-xl px-2 py-[9px] text-[11px] font-extrabold tracking-wide bg-[rgba(20,16,32,.6)] border border-white/20 backdrop-blur-md shadow-[0_4px_0_rgba(0,0,0,.5)]" id="btnOverShop">UPGRADES</button>
+        <button class="flex-1 cursor-pointer rounded-xl px-2 py-[9px] text-[11px] font-extrabold tracking-wide bg-[rgba(20,16,32,.6)] border border-white/20 backdrop-blur-md shadow-[0_4px_0_rgba(0,0,0,.5)]" id="btnOverWorlds">⌂ WORLDS</button>
       </div>
     </div>
   </section>
 
-  <div id="focusHint" class="hidden">Click to focus the game</div>
+  <div id="focusHint" class="hidden pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-[10px] bg-black/70 px-4 py-[10px] text-xs">Click to focus the game</div>
 </div>
 
 <script src="js/sprites.js"></script>

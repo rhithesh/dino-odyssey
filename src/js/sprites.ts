@@ -134,7 +134,7 @@ window.DR = window.DR || {};
   // Render a map with a 1px dark outline so every species reads on every world.
   function sprOutlined(rows, colors, outline) {
     const w = Math.max(...rows.map(r => r.length)) + 2, h = rows.length + 2;
-    const c = mk(w, h), g = c.getContext('2d');
+    const c: any = mk(w, h), g = c.getContext('2d');
     const on = (x, y) => y >= 1 && y <= rows.length && !!colors[(rows[y - 1] || '')[x - 1]];
     g.fillStyle = outline;
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
@@ -146,9 +146,9 @@ window.DR = window.DR || {};
     return c;
   }
   function species(D, colors, outline = 'rgba(8,6,14,.85)') {
-    const make = (body, frame, duck) => {
+    const make = (body, frame, duck = false) => {
       const rows = legsOn(D, body, frame, duck);
-      const s = outline ? sprOutlined(rows, colors, outline) : Object.assign(spr(rows, colors), { ax: 0, ay: 0 });
+      const s: any = outline ? sprOutlined(rows, colors, outline) : Object.assign(spr(rows, colors), { ax: 0, ay: 0 });
       s.ax += duck ? (D.dox ?? D.ox) : D.ox;
       return s;
     };

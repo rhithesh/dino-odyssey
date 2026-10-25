@@ -17,6 +17,6 @@ Thumbs.db
 *.log
 *.tmp
 
-# No build output — static MV3 extension, no dependencies
-# node_modules kept out if tooling is ever added
+# Build tooling dependencies and generated extension package
 node_modules/
+dist/

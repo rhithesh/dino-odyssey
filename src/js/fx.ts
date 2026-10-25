@@ -4,6 +4,8 @@
   const R = Math.random;
 
   class FX {
+    [key: string]: any;
+
     constructor(W, H, GY) {
       this.W = W; this.H = H; this.GY = GY;
       this.parts = []; this.texts = []; this.weather = []; this.kind = 'none';
@@ -17,7 +19,7 @@
     }
 
     // ---------- particles ----------
-    burst(x, y, n, o = {}) {
+    burst(x, y, n, o: any = {}) {
       for (let i = 0; i < n; i++) {
         const a = (o.angle ?? -Math.PI / 2) + (R() - .5) * (o.spread ?? Math.PI * 2), sp = (o.speed ?? 120) * (.4 + R() * .8);
         const life = (o.life ?? .6) * (.6 + R() * .6);
@@ -36,7 +38,7 @@
     }
     spawnW(init) {
       const W = this.W, H = this.H, k = this.kind;
-      const p = { x: R() * W * 1.2, y: init ? R() * H : -10, s: R() };
+      const p: any = { x: R() * W * 1.2, y: init ? R() * H : -10, s: R() };
       if (k === 'embers' || k === 'bubbles') p.y = init ? R() * H : H + 5;
       if (k === 'fog') { p.y = this.GY - 40 + R() * 60; p.w = 80 + R() * 120; p.x = R() * W * 1.5 - 60; }
       if (k === 'stars' || k === 'dust') { p.x = init ? R() * W : W + 10; p.y = R() * H; }
@@ -66,7 +68,7 @@
           case 'rain': ctx.strokeStyle = `rgba(170,200,255,${.25 + p.s * .35})`; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + 4, p.y - 10 - p.s * 6); ctx.stroke(); break;
           case 'snow': ctx.fillStyle = `rgba(255,255,255,${.5 + p.s * .5})`; ctx.fillRect(p.x, p.y, p.s > .7 ? 2 : 1, p.s > .7 ? 2 : 1); break;
           case 'dust': ctx.fillStyle = `rgba(255,220,170,${.2 + p.s * .3})`; ctx.fillRect(p.x, p.y, 2 + p.s * 4, 1); break;
-          case 'embers': ctx.fillStyle = p.s > .5 ? '#ffd000' : '#ff5a00'; ctx.globalAlpha = .5 + .5 * Math.sin(t * 8 + p.s * 20); ctx.fillRect(p.x, p.y, 1 + (p.s > .8), 1 + (p.s > .8)); ctx.globalAlpha = 1; break;
+          case 'embers': ctx.fillStyle = p.s > .5 ? '#ffd000' : '#ff5a00'; ctx.globalAlpha = .5 + .5 * Math.sin(t * 8 + p.s * 20); ctx.fillRect(p.x, p.y, 1 + Number(p.s > .8), 1 + Number(p.s > .8)); ctx.globalAlpha = 1; break;
           case 'bubbles': ctx.strokeStyle = 'rgba(180,240,255,.5)'; ctx.lineWidth = .8; ctx.beginPath(); ctx.arc(p.x, p.y, 1 + p.s * 2.5, 0, 6.3); ctx.stroke(); break;
           case 'fog': ctx.fillStyle = 'rgba(190,170,220,.07)'; ctx.fillRect(p.x, p.y, p.w, 18 + p.s * 20); ctx.fillRect(p.x + 10, p.y + 4, p.w - 20, 10); break;
           case 'stars': ctx.fillStyle = `rgba(200,220,255,${.2 + p.s * .5})`; ctx.fillRect(p.x, p.y, 3 + p.s * 14, 1); break;

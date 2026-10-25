@@ -3,11 +3,18 @@
 A Chrome side-panel extension: 11 cinematic worlds, 3 bosses, procedural chiptune music. No network needed.
 
 ## Install
-1. Open `chrome://extensions` and turn on **Developer mode**.
-2. Click **Load unpacked** and pick this folder.
-3. Pin the extension, then click its icon. The game opens in the side panel.
+1. Install the build tools and generate the extension: `npm install && npm run build`.
+2. Open `chrome://extensions` and turn on **Developer mode**.
+3. Click **Load unpacked** and pick the generated `dist/` folder.
+4. Pin the extension, then click its icon. The game opens in the side panel.
 
-> **Build note:** all 11 worlds are unlocked by default while the campaign is still being developed. Set `UNLOCK_ALL = false` at the top of `js/ui.js` to restore normal progression for production.
+> **Build note:** all 11 worlds are unlocked by default while the campaign is still being developed. Set `UNLOCK_ALL = false` at the top of `src/js/ui.ts` to restore normal progression for production.
+
+## Development
+
+- Sources are in `src/` as TypeScript; `sidepanel.css` is processed by Tailwind CSS.
+- Run `npm run typecheck` to check the TypeScript sources and `npm run build` to generate `dist/`.
+- Keep loading `dist/` as the unpacked extension; the build output is generated and ignored by git.
 
 ## Controls
 Space / ↑ / tap: jump (hold for higher) · ↓: duck / fast-fall · P / Esc: pause · M: mute
@@ -27,7 +34,7 @@ Space / ↑ / tap: jump (hold for higher) · ↓: duck / fast-fall · P / Esc: p
 
 ## Dino Dex
 
-19 playable species (Compsognathus to T-Rex), each with its own pixel art and its own strengths. Every species shares the same hitbox, so skins never change difficulty; only the starting bars do. You unlock them by clearing worlds and earning ★. Equip one from **DINO DEX** on the title screen or the worlds screen. The design is described in `DINO_DESIGN_PLAN.md`; the data is in `js/dinos.js`.
+19 playable species (Compsognathus to T-Rex), each with its own pixel art and its own strengths. Every species shares the same hitbox, so skins never change difficulty; only the starting bars do. You unlock them by clearing worlds and earning ★. Equip one from **DINO DEX** on the title screen or the worlds screen. The design is described in `DINO_DESIGN_PLAN.md`; the data is in `src/js/dinos.ts`.
 
 ## Coins and power bars
 
