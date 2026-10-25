@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dino Odyssey</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="game"></canvas>
+
+  <!-- In-game HUD -->
+  <div id="hud" class="hidden">
+    <div class="hud-top">
+      <div id="hearts"></div>
+      <div class="hud-mid">
+        <div id="score">0</div>
+        <div id="coins"><span class="coin-ico"></span><span id="coinCount">0</span></div>
+      </div>
+      <button id="pauseBtn" class="icon-btn" title="Pause (P / Esc)">❚❚</button>
+    </div>
+    <div id="progress"><div id="progFill"></div><div id="progFlag">⚑</div></div>
+    <div id="bossBar" class="hidden">
+      <div id="bossName">BOSS</div>
+      <div class="bar"><div id="bossFill"></div></div>
+    </div>
+    <div id="combo"></div>
+    <div id="twistTag"></div>
+  </div>
+
+  <!-- Touch / mouse controls -->
+  <div id="touch" class="hidden">
+    <button id="btnDuck" class="pad" aria-label="Duck">▼</button>
+    <button id="btnJump" class="pad" aria-label="Jump">▲</button>
+  </div>
+
+  <!-- Screens -->
+  <section id="scrTitle" class="screen">
+    <div class="offline-chip" id="netChip"><span class="dot"></span><span id="netText">No internet? No problem.</span></div>
+    <div class="logo">
+      <div class="logo-small">NO INTERNET</div>
+      <div class="logo-big">DINO<br>ODYSSEY</div>
+      <div class="logo-sub">8 worlds · 3 bosses · 19 dinos</div>
+    </div>
+    <div class="menu">
+      <button class="btn primary" id="btnContinue">▶ PLAY</button>
+      <div class="row">
+        <button class="btn" id="btnLevels">LEVELS</button>
+        <button class="btn" id="btnDinos">DINO DEX</button>
+      </div>
+      <div class="equipped" id="equipped"></div>
+      <div class="row">
+        <button class="btn small" id="btnSound">♪ SOUND: ON</button>
+        <button class="btn small" id="btnHelp">? HOW TO</button>
+      </div>
+    </div>
+    <div class="hint">Click here first, then press <kbd>SPACE</kbd></div>
+  </section>
+
+  <section id="scrLevels" class="screen hidden">
+    <div class="screen-head">
+      <button class="icon-btn" id="btnBackLevels">←</button>
+      <h2>SELECT WORLD</h2>
+      <div id="totalStars" class="stars-total">★ 0/24</div>
+    </div>
+    <button class="dex-link" id="btnLevelsDex"></button>
+    <div id="levelGrid"></div>
+  </section>
+
+  <section id="scrDex" class="screen hidden">
+    <div class="screen-head">
+      <button class="icon-btn" id="btnBackDex">←</button>
+      <h2>DINO DEX</h2>
+      <div id="dexCount" class="stars-total">1/19</div>
+    </div>
+    <div id="dexGrid"></div>
+    <p class="dex-foot">* Not technically dinosaurs, but we let them in anyway.</p>
+  </section>
+
+  <section id="scrHelp" class="screen hidden">
+    <div class="screen-head">
+      <button class="icon-btn" id="btnBackHelp">←</button>
+      <h2>HOW TO PLAY</h2>
+      <div></div>
+    </div>
+    <div class="help">
+      <p><kbd>SPACE</kbd> / <kbd>↑</kbd> / tap — <b>Jump</b> (hold for higher)</p>
+      <p><kbd>↓</kbd> — <b>Duck</b> / fast-fall</p>
+      <p><kbd>P</kbd> / <kbd>ESC</kbd> — Pause &nbsp; <kbd>M</kbd> — Mute</p>
+      <hr>
+      <p>Reach the <b>⚑ finish</b> to clear a world. You have <b>3 hearts</b>.</p>
+      <p>Clear worlds and earn ★ to unlock <b>19 dinosaurs</b>, each with its own perk.</p>
+      <p>Dodge things by a hair for <b>CLOSE CALL</b> bonuses that build your combo.</p>
+      <p>Bosses throw <b class="glow">glowing orbs</b> — grab them to fire back!</p>
+      <hr>
+      <p>★ Clear the world &nbsp;★★ Grab 70% of coins &nbsp;★★★ Take no damage</p>
+      <p class="dim">Every world bends the rules. Watch the twist banner.</p>
+    </div>
+  </section>
+
+  <section id="scrPause" class="screen dim-bg hidden">
+    <h2 class="big">PAUSED</h2>
+    <div class="menu">
+      <button class="btn primary" id="btnResume">▶ RESUME</button>
+      <button class="btn" id="btnRestart">↻ RESTART</button>
+      <button class="btn" id="btnQuit">⌂ WORLDS</button>
+    </div>
+  </section>
+
+  <section id="scrResult" class="screen dim-bg hidden">
+    <div class="result-title" id="resTitle">WORLD CLEAR!</div>
+    <div class="result-stars" id="resStars"><span>★</span><span>★</span><span>★</span></div>
+    <div class="result-stats" id="resStats"></div>
+    <div class="unlock hidden" id="resUnlock"></div>
+    <div class="menu">
+      <button class="btn primary" id="btnNext">NEXT WORLD ▶</button>
+      <button class="btn" id="btnReplay">↻ REPLAY</button>
+      <button class="btn" id="btnResWorlds">⌂ WORLDS</button>
+    </div>
+  </section>
+
+  <section id="scrOver" class="screen dim-bg hidden">
+    <div class="result-title red">EXTINCT</div>
+    <div class="result-stats" id="overStats"></div>
+    <div class="tip" id="overTip"></div>
+    <div class="menu">
+      <button class="btn primary" id="btnRetry">↻ TRY AGAIN</button>
+      <button class="btn" id="btnOverWorlds">⌂ WORLDS</button>
+    </div>
+  </section>
+
+  <div id="focusHint" class="hidden">Click to focus the game</div>
+</div>
+
+<script src="js/sprites.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/levels.js"></script>
+<script src="js/dinos.js"></script>
+<script src="js/backgrounds.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/game.js"></script>
+<script src="js/entities.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>

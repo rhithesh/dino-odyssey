@@ -1,0 +1,22 @@
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs / temp
+*.log
+*.tmp
+
+# No build output — static MV3 extension, no dependencies
+# node_modules kept out if tooling is ever added
+node_modules/
