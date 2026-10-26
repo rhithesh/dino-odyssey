@@ -7,6 +7,23 @@
   <link rel="stylesheet" href="sidepanel.css">
 </head>
 <body class="h-full overflow-hidden bg-[#0b0910] font-mono text-[#f4f1ea] select-none">
+  <!-- Shared padlock art (steel shackle, steel body, gold keyhole), used via <use href="#padlock">. -->
+  <svg width="0" height="0" class="absolute" aria-hidden="true"><defs>
+    <linearGradient id="lkSteel" x1="0" x2="1"><stop offset="0" stop-color="#2a2638"/><stop offset=".3" stop-color="#f0ecff"/><stop offset=".55" stop-color="#8a84a8"/><stop offset="1" stop-color="#1b1926"/></linearGradient>
+    <linearGradient id="lkBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6b6688"/><stop offset=".12" stop-color="#4a4562"/><stop offset="1" stop-color="#14121c"/></linearGradient>
+    <linearGradient id="lkShade" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".35"/><stop offset=".3" stop-color="#fff" stop-opacity=".08"/><stop offset="1" stop-color="#000" stop-opacity=".45"/></linearGradient>
+    <linearGradient id="lkGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3c4"/><stop offset=".45" stop-color="#ffcf4a"/><stop offset="1" stop-color="#a86e00"/></linearGradient>
+    <symbol id="padlock" viewBox="0 0 64 80">
+      <path d="M17 38 V22 a15 15 0 0 1 30 0 V38" fill="none" stroke="#0b0a12" stroke-width="10" stroke-linecap="round"/>
+      <path d="M17 38 V22 a15 15 0 0 1 30 0 V38" fill="none" stroke="url(#lkSteel)" stroke-width="7" stroke-linecap="round"/>
+      <rect x="4" y="34" width="56" height="42" rx="10" fill="url(#lkBody)" stroke="#0b0a12" stroke-width="1.5"/>
+      <rect x="4" y="34" width="56" height="42" rx="10" fill="url(#lkShade)"/>
+      <rect x="8" y="37" width="48" height="2" rx="1" fill="#fff" fill-opacity=".25"/>
+      <rect x="22" y="44" width="20" height="24" rx="5" fill="url(#lkGold)" stroke="#5a3a00" stroke-opacity=".6"/>
+      <circle cx="32" cy="53" r="3.6" fill="#1a1205"/><path d="M30.6 55 h2.8 l1 7 h-4.8z" fill="#1a1205"/>
+      <circle cx="9.5" cy="40" r="1.6" fill="#c9c3de"/><circle cx="54.5" cy="40" r="1.6" fill="#c9c3de"/><circle cx="9.5" cy="70" r="1.6" fill="#8a84a8"/><circle cx="54.5" cy="70" r="1.6" fill="#8a84a8"/>
+    </symbol>
+  </defs></svg>
 <div id="app" class="relative h-screen w-screen overflow-hidden">
   <canvas id="game" class="absolute inset-0 block h-full w-full [image-rendering:pixelated]"></canvas>
   <div id="veil" class="hidden absolute inset-0 z-[1] bg-[rgba(6,5,13,.5)]"></div>
@@ -69,7 +86,7 @@
       <div id="totalStars" class="min-w-[34px] text-xs text-[var(--accent)]">★ 0/24</div>
     </div>
     <button id="btnLevelsDex" class="mb-[10px] w-full max-w-[440px] cursor-pointer rounded-[10px] px-3 py-2 text-left text-[11px] tracking-wide text-white bg-white/5 border border-dashed border-white/25 hover:bg-white/10"></button>
-    <div id="levelGrid" class="flex w-full max-w-[520px] flex-col gap-[10px]"></div>
+    <div id="levelGrid" class="flex w-full max-w-[520px] flex-col gap-4 pt-2"></div>
   </section>
 
   <section id="scrDex" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-start gap-[18px] px-0 pt-[60px] pb-4 text-center overflow-y-auto animate-[screenIn_.35s_ease-out]">

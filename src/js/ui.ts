@@ -35,7 +35,7 @@
   const isOpen = D => DR.dinoUnlocked(D, save);
   // DEV FLAG: every world is playable while the campaign is still being built.
   // Flip to false for production — progression then follows save.unlocked again.
-  const UNLOCK_ALL = true;
+  const UNLOCK_ALL = false;
   // The retro world is always playable and never part of the unlock chain.
   const levelOpen = L => UNLOCK_ALL || !!L.alwaysOpen || L.id <= save.unlocked;
   const dinoById = id => DINOS.find(d => d.id === id) || DINOS[0];
@@ -118,6 +118,7 @@
     const mk = src => { const i = document.createElement('img'); i.src = src; i.alt = ''; i.className = 'cage pointer-events-none absolute inset-0 h-full w-full'; return i; };
     box.prepend(mk(back)); box.append(mk(front));
   }
+  const padlockIcon = (s = 12) => `<svg class="inline-block shrink-0" width="${s}" height="${Math.round(s * 80 / 64)}" aria-hidden="true"><use href="#padlock"/></svg>`;
   const cageIcon = (s = 12) => `<svg class="inline-block shrink-0" width="${s}" height="${s}" viewBox="0 0 9 9" shape-rendering="crispEdges" fill="#ffcf4a"><rect x="4" y="0" width="1" height="1"/><rect x="0" y="1" width="9" height="1"/><rect x="0" y="2" width="1" height="6"/><rect x="2" y="2" width="1" height="6"/><rect x="4" y="2" width="1" height="6"/><rect x="6" y="2" width="1" height="6"/><rect x="8" y="2" width="1" height="6"/><rect x="0" y="8" width="9" height="1"/></svg>`;
   function dinoCard(D, w, h, frame: any = 'stand', locked = false) {
     const c = DR.Sprites.mk(w, h), g = c.getContext('2d');
@@ -243,19 +244,25 @@
     LEVELS.forEach(L => {
       const locked = !levelOpen(L), st = save.stars[L.id] || 0;
       const card = document.createElement('button');
-      card.className = `relative flex min-h-[86px] w-full items-stretch overflow-hidden rounded-[14px] border border-white/20 p-0 text-left shadow-[0_4px_0_rgba(0,0,0,.5)] transition-[transform,box-shadow] ${locked ? 'grayscale brightness-[.45] cursor-not-allowed' : 'hover:-translate-y-0.5 hover:scale-[1.01] hover:shadow-[0_6px_0_rgba(0,0,0,.5),0_0_20px_rgba(255,255,255,.12)]'}`;
+      card.className = `relative flex min-h-[86px] w-full items-stretch ${locked ? '' : 'overflow-hidden'} rounded-[14px] border border-white/20 p-0 text-left shadow-[0_4px_0_rgba(0,0,0,.5)] transition-[transform,box-shadow] ${locked ? 'cursor-not-allowed' : 'hover:-translate-y-0.5 hover:scale-[1.01] hover:shadow-[0_6px_0_rgba(0,0,0,.5),0_0_20px_rgba(255,255,255,.12)]'}`;
       const thumb = DR.Backgrounds.thumb(L, 200, 56);
       const tg = thumb.getContext('2d'), d = DR.Sprites.forLevel(L, save.dino).dino.run[0];
-      tg.drawImage(d, 150 - (d.ax || 0), Math.round(56 * .78) - d.height + (d.ay || 0));
-      thumb.className = 'absolute inset-0 h-full w-full [image-rendering:pixelated]';
+      if (!locked) tg.drawImage(d, 150 - (d.ax || 0), Math.round(56 * .78) - d.height + (d.ay || 0));
+      thumb.className = `absolute inset-0 h-full w-full rounded-[13px] [image-rendering:pixelated] ${locked ? 'grayscale brightness-[.45]' : ''}`;
       card.appendChild(thumb);
-      const info = document.createElement('div'); info.className = 'absolute inset-0 z-[1] flex flex-col justify-between bg-[rgba(0,0,0,.62)] py-[10px] pl-2';
+      const info = document.createElement('div'); info.className = `absolute inset-0 z-[1] rounded-[13px] flex flex-col justify-between bg-[rgba(0,0,0,.62)] py-[10px] pl-2 ${locked ? 'pr-[116px] [&>div:first-child]:opacity-60' : ''}`;
       info.innerHTML = `
         <div><div class="text-[10px] tracking-[3px] opacity-80">WORLD ${L.id}</div><div class="text-[17px] font-black tracking-wide [text-shadow:0_2px_0_#000]">${L.name}</div><div class="text-[10px] opacity-[.85]">${L.twist.split('—')[0].trim()}</div></div>
-        <div class="flex items-center justify-start gap-[10px] text-[11px]"><span class="flex items-center">${[1, 2, 3].map(i => `<span class="text-sm ${i <= st ? 'text-[var(--accent)] [text-shadow:0_0_6px_var(--accent)]' : 'text-white/25'}">★</span>`).join('')}</span>
-        <span>${save.best[L.id] ? 'BEST ' + save.best[L.id].toLocaleString() : ''}</span></div>`;
+        ${locked ? `<div class="flex items-center gap-1.5 text-[10px] tracking-wide text-white/70">${padlockIcon(10)}Clear <b class="text-[var(--accent)]">World ${L.id - 1}</b></div>` : `<div class="flex items-center justify-start gap-[10px] text-[11px]"><span class="flex items-center">${[1, 2, 3].map(i => `<span class="text-sm ${i <= st ? 'text-[var(--accent)] [text-shadow:0_0_6px_var(--accent)]' : 'text-white/25'}">★</span>`).join('')}</span>
+        <span>${save.best[L.id] ? 'BEST ' + save.best[L.id].toLocaleString() : ''}</span></div>`}`;
       card.appendChild(info);
-      if (locked) { const lock = document.createElement('span'); lock.className = 'absolute right-[14px] top-1/2 z-[2] -translate-y-1/2 text-[22px]'; lock.textContent = '🔒'; card.appendChild(lock); }
+      if (locked) {
+        // oversized padlock: shackle pokes out above the card, body hangs just past the bottom edge
+        const lock = document.createElement('span');
+        lock.className = 'pointer-events-none absolute -top-4 right-5 z-[2] [filter:drop-shadow(0_6px_10px_rgba(0,0,0,.7))]';
+        lock.innerHTML = `<svg width="88" height="110" aria-hidden="true"><use href="#padlock"/></svg>`;
+        card.appendChild(lock);
+      }
       card.onclick = () => { if (locked) { DR.Audio.sfx('warn'); return; } DR.Audio.sfx('click'); startLevel(L.id); };
       grid.appendChild(card);
     });
