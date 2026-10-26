@@ -257,10 +257,10 @@
         <span>${save.best[L.id] ? 'BEST ' + save.best[L.id].toLocaleString() : ''}</span></div>`}`;
       card.appendChild(info);
       if (locked) {
-        // padlock hanging off the top edge: shackle hooked over the card, body tilted as if it swung
+        // oversized padlock: shackle pokes out above the card, body hangs just past the bottom edge
         const lock = document.createElement('span');
-        lock.className = 'pointer-events-none absolute -top-[22px] right-6 z-[2] origin-top -rotate-[9deg] [filter:drop-shadow(0_6px_10px_rgba(0,0,0,.7))]';
-        lock.innerHTML = `<svg width="78" height="98" aria-hidden="true"><use href="#padlock"/></svg>`;
+        lock.className = 'pointer-events-none absolute -top-4 right-5 z-[2] [filter:drop-shadow(0_6px_10px_rgba(0,0,0,.7))]';
+        lock.innerHTML = `<svg width="88" height="110" aria-hidden="true"><use href="#padlock"/></svg>`;
         card.appendChild(lock);
       }
       card.onclick = () => { if (locked) { DR.Audio.sfx('warn'); return; } DR.Audio.sfx('click'); startLevel(L.id); };
