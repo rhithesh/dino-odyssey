@@ -43,11 +43,11 @@
     <div class="-mt-[30px]">
       <div class="text-[11px] tracking-[6px] text-[var(--dim)]">NO INTERNET</div>
       <div class="my-2 text-[46px] leading-[.95] font-black tracking-[3px] bg-gradient-to-b from-[#fff6d5] via-[#ffcf4a] to-[#ff6b3d] bg-clip-text text-transparent [filter:drop-shadow(0_4px_0_#3a1408)_drop-shadow(0_0_22px_rgba(255,140,60,.45))] animate-[logoFloat_3s_ease-in-out_infinite]">DINO<br>ODYSSEY</div>
-      <div class="text-[11px] tracking-wide text-[var(--dim)]">11 worlds · 3 bosses · 19 dinos</div>
+      <div class="my-1 text-[34px] font-black leading-none bg-gradient-to-b from-[#7df9ff] to-[#2a9dff] bg-clip-text text-transparent [filter:drop-shadow(0_2px_0_#0b4a7a)_drop-shadow(0_0_12px_rgba(125,249,255,.45))]" aria-label="infinity">∞</div>
     </div>
     <div class="flex w-[min(260px,85%)] flex-col gap-[10px]">
       <button class="cursor-pointer rounded-xl px-[14px] py-[13px] text-sm font-extrabold tracking-[2px] bg-gradient-to-b from-[#ffd65c] to-[#ff8a3d] text-[#2a1004] border border-[#fff3c4] shadow-[0_4px_0_#8a3510,0_0_24px_rgba(255,150,60,.35)] transition-transform duration-100 hover:brightness-110 hover:-translate-y-px active:translate-y-[3px]" id="btnContinue">▶ PLAY</button>
-      <button class="cursor-pointer rounded-xl px-[14px] py-[11px] text-sm font-extrabold tracking-[2px] bg-gradient-to-b from-[#7df9ff] to-[#2a9dff] text-[#04121f] border border-[#d6fbff] shadow-[0_4px_0_#0b4a7a,0_0_24px_rgba(125,249,255,.35)] transition-transform duration-100 hover:brightness-110 hover:-translate-y-px active:translate-y-[3px]" id="btnEndless">∞ ENDLESS · SCORE CHASE</button>
+      <button class="cursor-pointer rounded-xl px-[14px] py-[11px] text-sm font-extrabold tracking-[2px] bg-gradient-to-b from-[#7df9ff] to-[#2a9dff] text-[#04121f] border border-[#d6fbff] shadow-[0_4px_0_#0b4a7a,0_0_24px_rgba(125,249,255,.35)] transition-transform duration-100 hover:brightness-110 hover:-translate-y-px active:translate-y-[3px]" id="btnEndless">∞ ENDLESS</button>
       <div class="flex gap-[10px]">
         <button class="flex-1 cursor-pointer rounded-xl px-[14px] py-[13px] text-sm font-extrabold tracking-[2px] bg-[rgba(20,16,32,.6)] border border-white/20 backdrop-blur-md shadow-[0_4px_0_rgba(0,0,0,.5)] transition-[transform,background,box-shadow] duration-150 hover:bg-white/15 hover:-translate-y-px active:translate-y-[3px]" id="btnLevels">LEVELS</button>
         <button class="flex-1 cursor-pointer rounded-xl px-[14px] py-[13px] text-sm font-extrabold tracking-[2px] bg-[rgba(20,16,32,.6)] border border-white/20 backdrop-blur-md shadow-[0_4px_0_rgba(0,0,0,.5)] transition-[transform,background,box-shadow] duration-150 hover:bg-white/15 hover:-translate-y-px active:translate-y-[3px]" id="btnDinos">DINO DEX</button>
@@ -88,14 +88,12 @@
       <h2 class="m-0 text-[15px] tracking-[4px]">DINO</h2>
       <div id="wallet" class="flex min-w-[52px] items-center justify-end gap-[5px] text-sm font-black text-[var(--accent)]"><span class="h-[9px] w-[9px] rounded-full bg-[radial-gradient(circle_at_35%_35%,#fff6b0,#ffc400_55%,#b37a00)] shadow-[0_0_6px_#ffc400]"></span><span id="walletN">0</span></div>
     </div>
-    <div class="w-full max-w-[360px] bg-[radial-gradient(ellipse_at_50%_80%,rgba(255,207,74,.16),transparent_65%)] pt-1"><canvas id="dpCanvas" class="mx-auto block h-[190px] w-[300px] cursor-grab [image-rendering:pixelated] [touch-action:none] active:cursor-grabbing" width="300" height="190"></canvas></div>
-    <div class="mt-1 text-xl font-black tracking-[2px]" id="dpName"></div>
-    <div class="text-[13px] tracking-[3px] text-[var(--accent)] [text-shadow:0_0_8px_rgba(255,207,74,.5)]" id="dpPower"></div>
-    <div class="max-w-[340px] text-[10px] opacity-65" id="dpEra"></div>
-    <div class="mb-1 text-[11px] text-[#7df9a8]" id="dpPerk"></div>
-    <button class="w-full max-w-[360px] cursor-pointer rounded-xl px-[14px] py-[13px] text-sm font-extrabold tracking-[2px] bg-[rgba(20,16,32,.6)] border border-white/20 backdrop-blur-md shadow-[0_4px_0_rgba(0,0,0,.5)] transition-[transform,background,box-shadow] duration-150 hover:bg-white/15" id="dpEquip">EQUIP</button>
-    <div class="mt-[10px] mx-[2px] text-[10px] tracking-[4px] text-[var(--accent)] opacity-85">POWERS · 🪙 = +1 BAR</div>
-    <div id="dpSkills" class="flex w-full max-w-[440px] flex-col gap-[7px] text-left"></div>
+    <div class="w-full max-w-[420px] bg-[radial-gradient(ellipse_at_50%_85%,rgba(255,207,74,.14),transparent_65%)]"><div id="dpStage" class="relative mx-auto h-[190px] w-[300px]"><canvas id="dpCanvas" class="relative block h-[190px] w-[300px] cursor-grab [image-rendering:pixelated] [touch-action:none] active:cursor-grabbing" width="300" height="190"></canvas></div></div>
+    <div class="font-pixel text-[46px] leading-none tracking-[2px]" id="dpName"></div>
+    <div class="text-xs tracking-[3px] text-[var(--accent)] [text-shadow:0_0_8px_rgba(255,207,74,.5)]" id="dpPower"></div>
+    <div class="mt-1 items-center gap-2 rounded-full border border-white/10 bg-[#0b0a12] px-3 py-1.5 text-[11px] tracking-wide text-white/70" id="dpPerk"></div>
+    <button class="mt-1.5 min-w-[170px] cursor-pointer rounded-full px-6 py-2.5 text-xs font-extrabold tracking-[2px] border transition-[transform,background,box-shadow] duration-150 active:translate-y-px" id="dpEquip">EQUIP</button>
+    <div id="dpSkills" class="mt-3 flex w-full max-w-[420px] flex-col gap-2 text-left"></div>
   </section>
 
   <section id="scrHelp" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-center gap-[18px] p-5 text-center animate-[screenIn_.35s_ease-out] bg-[rgba(5,4,10,.82)]">
@@ -146,7 +144,7 @@
   </section>
 
   <section id="scrOver" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-center gap-[18px] p-5 text-center animate-[screenIn_.35s_ease-out] bg-[radial-gradient(ellipse_at_center,rgba(10,8,18,.72),rgba(5,4,10,.92))] backdrop-blur-[3px]">
-    <div id="overTitle" class="text-[30px] font-black tracking-[3px] text-[#ff3b5c] [text-shadow:0_3px_0_#4a0010,0_0_24px_rgba(255,40,80,.5)] animate-[titleSlam_.5s_cubic-bezier(.2,1.6,.4,1)]">EXTINCT</div>
+    <div id="overTitle" class="text-[44px] font-bold tracking-[1px] font-['Priestacy','Snell_Roundhand','Brush_Script_MT',cursive] text-[#ff3b5c] [text-shadow:0_3px_0_#4a0010,0_0_24px_rgba(255,40,80,.5)] animate-[titleSlam_.5s_cubic-bezier(.2,1.6,.4,1)]">Extinct</div>
     <div id="overStats" class="min-w-[220px] text-xs leading-[1.9]"></div>
     <div id="overTip" class="max-w-[280px] text-[11px] text-[var(--dim)]"></div>
     <div class="flex w-[min(260px,85%)] flex-col gap-[10px]">

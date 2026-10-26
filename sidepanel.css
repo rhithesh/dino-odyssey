@@ -1,3 +1,13 @@
+@font-face {
+  font-family: 'ByteBounce';
+  src: url('fonts/ByteBounce.ttf') format('truetype');
+  font-display: block;
+}
+@font-face {
+  font-family: 'Priestacy';
+  src: url('fonts/Priestacy.otf') format('opentype');
+  font-display: block;
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -35,3 +45,6 @@ body.retro .icon-btn { color: #535353; background: rgba(255,255,255,.8); border-
 body.retro .icon-btn:hover { background: rgba(83,83,83,.12); }
 body.retro .pad { color: #535353; background: rgba(255,255,255,.65); border-color: rgba(83,83,83,.45); }
 body.retro .pad:active, body.retro .pad.down { background: rgba(83,83,83,.18); }
+
+/* Gold coin dot, used instead of the 🪙 emoji so it renders the same everywhere. */
+.coin-dot { display: inline-block; width: 9px; height: 9px; border-radius: 9999px; background: radial-gradient(circle at 35% 35%, #fff6b0, #ffc400 55%, #b37a00); box-shadow: 0 0 5px rgba(255,196,0,.6); }

@@ -2,10 +2,10 @@
 // coins buy one more bar at a time, each bar a little pricier than the last.
 (function () {
   DR.STATS = [
-    { id: 'jump', icon: '⇡', name: 'JUMP', hint: 'Jump height' },
-    { id: 'tough', icon: '♥', name: 'TOUGHNESS', hint: 'Invincibility after hits · +1 heart at 5 and 10 bars' },
-    { id: 'agile', icon: '⚡', name: 'AGILITY', hint: 'Timing, fast drop · Double Jump at 5 bars' },
-    { id: 'dash', icon: '≫', name: 'DASH', hint: 'Phase through hazards (SHIFT) · longer, faster with bars' },
+    { id: 'jump', icon: '⇡', name: 'JUMP' },
+    { id: 'tough', icon: '♥', name: 'TOUGHNESS' },
+    { id: 'agile', icon: '⚡', name: 'AGILITY' },
+    { id: 'dash', icon: '≫', name: 'DASH' },
   ];
   DR.MAX_BARS = 10;
 

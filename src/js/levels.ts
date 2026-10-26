@@ -1,5 +1,5 @@
 // World definitions: palettes, twists, pacing, music and bosses.
-// mode: run | swim | flip | mix.  Distances in meters (1m = 10px).
+// mode: run | swim | flip | mix.  Distances in strides (1 stride = 10px).
 DR.LEVELS = [
   {
     id: 1, name: 'DESERT DAWN', tagline: 'Where it all began.', twist: 'THE CLASSIC — learn to jump & duck',
@@ -66,7 +66,7 @@ DR.LEVELS = [
     boss: { name: 'THE EXTINCTION EVENT', kind: 'meteor', hp: 8, attacks: ['low', 'high', 'rain', 'slam', 'low', 'high'] },
     palette: { skyTop: '#0a0014', skyMid: '#3a0050', skyBot: '#ff2a6d', sun: '#ffe600', far: '#2a0040', mid: '#1a0030', near: '#0d0018', ground: '#0a0012', groundDark: '#050008', line: '#ff2a6d', dino: '#f4f1ea', dinoEye: '#ff2a6d', obstacle: '#00f0ff', flyer: '#00f0ff', accent: '#ff2a6d', accent2: '#ffe600', grade: 'rgba(255,0,120,.07)' },
     music: { bpm: 146, root: 45, scale: 'minor', prog: [0, 5, 6, 4], lead: 'sawtooth', drive: true, echo: true, seed: 88 },
-    tips: ['The rules change every few hundred meters. Read the banner!'],
+    tips: ['The rules change every few hundred strides. Read the banner!'],
   },
   {
     id: 9, name: 'CYBER VAULT', tagline: 'The grid is awake.', twist: 'LASER GRID — low beams need a jump, high beams a duck',
@@ -95,8 +95,8 @@ DR.LEVELS = [
 ];
 
 // ENDLESS: one rule set (run, no finish line). The scenery rotates through the
-// classic run worlds every ENDLESS_SEG metres; speed and spawn density ramp to max
-// over the first ENDLESS_BASE.goal metres.
+// classic run worlds every ENDLESS_SEG strides; speed and spawn density ramp to max
+// over the first ENDLESS_BASE.goal strides.
 DR.ENDLESS_CYCLE = [1, 2, 3, 4, 6, 9, 11];
 DR.ENDLESS_SEG = 250;
 DR.ENDLESS_BASE = {

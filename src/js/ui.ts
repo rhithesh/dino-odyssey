@@ -50,18 +50,93 @@
     return fresh;
   }
   // Draw a species onto a small canvas (w x h logical px), feet on a ground line; silhouette when locked.
+  // Locked dinos sit inside a round steel cage seen slightly from above. It is drawn in two passes around
+  // the dino: 'back' (far bars, far rail halves, floor) and 'front' (near bars, near rails, base and cap).
+  // Geometry comes from the caller and must stay fixed between frames so the cage never bobs.
+  function drawCage(g, layer, cx, top, bottom, R, u) {
+    const ry = R * .2, N = 16, back = layer === 'back';
+    const metal = (x0, x1, a) => {
+      const gr = g.createLinearGradient(x0, 0, x1, 0);
+      gr.addColorStop(0, `rgba(40,38,56,${a})`); gr.addColorStop(.35, `rgba(232,228,246,${a})`);
+      gr.addColorStop(.55, `rgba(150,144,178,${a})`); gr.addColorStop(1, `rgba(30,28,44,${a})`);
+      return gr;
+    };
+    const ring = (y, from, to, width, a) => {
+      g.lineWidth = width; g.strokeStyle = metal(cx - R, cx + R, a);
+      g.beginPath(); g.ellipse(cx, y, R, ry, 0, from, to); g.stroke();
+    };
+    g.save(); g.lineCap = 'round';
+    if (back) {
+      g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.ellipse(cx, bottom, R * 1.05, ry * 1.1, 0, 0, Math.PI * 2); g.fill();
+      ring(top, Math.PI, Math.PI * 2, 2 * u, .55); ring(bottom, Math.PI, Math.PI * 2, 2 * u, .55);
+    }
+    for (let i = 0; i < N; i++) {
+      const th = (i + .5) * Math.PI * 2 / N, z = Math.cos(th);
+      if ((z < 0) !== back) continue;
+      const x = cx + R * Math.sin(th), bw = u * (back ? 1 : 1.4) * (.6 + .4 * Math.abs(z));
+      g.lineWidth = bw; g.strokeStyle = metal(x - bw / 2, x + bw / 2, back ? .45 : .95);
+      g.beginPath(); g.moveTo(x, top + ry * z); g.lineTo(x, bottom + ry * z); g.stroke();
+    }
+    if (!back) {
+      ring(top, 0, Math.PI, 2.4 * u, 1); ring(bottom, 0, Math.PI, 2.4 * u, 1);
+      // base plinth
+      const bh = 3 * u, bg = g.createLinearGradient(0, bottom, 0, bottom + ry + bh);
+      bg.addColorStop(0, '#5b5676'); bg.addColorStop(1, '#16141f');
+      g.fillStyle = bg; g.beginPath();
+      g.ellipse(cx, bottom + bh, R + u, ry + u * .5, 0, 0, Math.PI); g.lineTo(cx - R - u, bottom); g.ellipse(cx, bottom, R + u, ry + u * .5, 0, Math.PI, 0, true); g.closePath(); g.fill();
+      g.strokeStyle = 'rgba(255,207,74,.55)'; g.lineWidth = Math.max(1, u * .6);
+      g.beginPath(); g.ellipse(cx, bottom + bh * .5, R + u, ry + u * .5, 0, .15, Math.PI - .15); g.stroke();
+      // domed cap and hanging ring
+      const ch = R * .32, cg = g.createLinearGradient(cx - R, 0, cx + R, 0);
+      cg.addColorStop(0, '#24212f'); cg.addColorStop(.35, '#bdb7d6'); cg.addColorStop(.6, '#6e688c'); cg.addColorStop(1, '#1b1926');
+      g.fillStyle = cg; g.beginPath();
+      g.ellipse(cx, top, R, ry, 0, 0, Math.PI); g.quadraticCurveTo(cx - R, top - ch, cx, top - ch); g.quadraticCurveTo(cx + R, top - ch, cx + R, top); g.fill();
+      g.strokeStyle = 'rgba(255,207,74,.55)'; g.lineWidth = Math.max(1, u * .6);
+      g.beginPath(); g.ellipse(cx, top, R, ry, 0, .15, Math.PI - .15); g.stroke();
+      g.strokeStyle = metal(cx - 2.5 * u, cx + 2.5 * u, 1); g.lineWidth = 1.2 * u;
+      g.beginPath(); g.arc(cx, top - ch - 2 * u, 2 * u, 0, Math.PI * 2); g.stroke();
+    }
+    g.restore();
+  }
+  // The cage is rendered once, smooth at 3x, in a 300x190 design box, then laid over a dino canvas as two
+  // images (behind and in front of the dino). Same art and proportions everywhere; CSS scales it to the box.
+  const CAGE = { W: 300, H: 190, cx: 150, R: 72, top: 52, bottom: 160, floor: 163, innerW: 118, innerH: 100 };
+  let cageArt = null;
+  function cageImgs() {
+    if (!cageArt) cageArt = ['back', 'front'].map(layer => {
+      const c = document.createElement('canvas'), k = 3; c.width = CAGE.W * k; c.height = CAGE.H * k;
+      const g = c.getContext('2d'); g.scale(k, k); drawCage(g, layer, CAGE.cx, CAGE.top, CAGE.bottom, CAGE.R, 3);
+      return c.toDataURL();
+    });
+    return cageArt;
+  }
+  // box: relatively positioned wrapper around the dino canvas (which needs `relative` so it stacks between).
+  function setCage(box, on) {
+    box.querySelectorAll('.cage').forEach(n => n.remove());
+    if (!on) return;
+    const [back, front] = cageImgs();
+    const mk = src => { const i = document.createElement('img'); i.src = src; i.alt = ''; i.className = 'cage pointer-events-none absolute inset-0 h-full w-full'; return i; };
+    box.prepend(mk(back)); box.append(mk(front));
+  }
+  const cageIcon = (s = 12) => `<svg class="inline-block shrink-0" width="${s}" height="${s}" viewBox="0 0 9 9" shape-rendering="crispEdges" fill="#ffcf4a"><rect x="4" y="0" width="1" height="1"/><rect x="0" y="1" width="9" height="1"/><rect x="0" y="2" width="1" height="6"/><rect x="2" y="2" width="1" height="6"/><rect x="4" y="2" width="1" height="6"/><rect x="6" y="2" width="1" height="6"/><rect x="8" y="2" width="1" height="6"/><rect x="0" y="8" width="9" height="1"/></svg>`;
   function dinoCard(D, w, h, frame: any = 'stand', locked = false) {
     const c = DR.Sprites.mk(w, h), g = c.getContext('2d');
     const set = DR.Sprites.dinoOf(D.id, { dino: '#cfc6b4', dinoEye: '#1a1418' }).dino;
     const img = frame === 'stand' ? set.stand : set.run[frame];
     const x = Math.round((w - img.width) / 2), y = h - 4 - img.height + (img.ay || 0);
+    if (locked) {
+      // silhouette scaled to fit inside the cage overlay (see setCage), feet on the cage floor
+      const t = DR.Sprites.mk(img.width, img.height), tg = t.getContext('2d');
+      tg.drawImage(img, 0, 0); tg.globalCompositeOperation = 'source-in'; tg.fillStyle = '#3b3652'; tg.fillRect(0, 0, t.width, t.height);
+      const kx = w / CAGE.W, ky = h / CAGE.H, f = Math.min(1, CAGE.innerW * kx / set.stand.width, CAGE.innerH * ky / set.stand.height);
+      const dw = Math.round(img.width * f), dh = Math.round(img.height * f);
+      g.imageSmoothingEnabled = false;
+      g.drawImage(t, Math.round(w / 2 - dw / 2), Math.round(CAGE.floor * ky - dh + (img.ay || 0) * f), dw, dh);
+      return c;
+    }
     g.fillStyle = 'rgba(255,255,255,.08)'; g.fillRect(0, h - 4, w, 1);
     g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(x + 4, h - 4, img.width - 8, 2);
-    if (locked) {
-      const t = DR.Sprites.mk(img.width, img.height), tg = t.getContext('2d');
-      tg.drawImage(img, 0, 0); tg.globalCompositeOperation = 'source-in'; tg.fillStyle = '#05040a'; tg.fillRect(0, 0, t.width, t.height);
-      g.drawImage(t, x, y);
-    } else g.drawImage(img, x, y);
+    g.drawImage(img, x, y);
     return c;
   }
 
@@ -187,6 +262,30 @@
   }
 
   // ---------------- end of a run ----------------
+  // ---------------- endless (score chase) ----------------
+  // One rule set, no finish line: the run ends only when hearts run out.
+  function startEndless() {
+    DR.Audio.init(); DR.Audio.resume();
+    current = { ...DR.ENDLESS_BASE, id: 0, endless: true, name: 'ENDLESS' };
+    hudCache = {};
+    show(null);
+    $('btnDash').classList.toggle('hidden', !dashOwned());
+    document.body.classList.remove('retro');
+    document.body.classList.add('endless');
+    game.load(current, { dino: save.dino, up: barsNow(save.dino) });
+  }
+  function endlessOver(r) {
+    $('touch').classList.add('hidden');
+    const isBest = r.score > (save.best.endless || 0);
+    if (isBest) save.best.endless = r.score;
+    save.coins += r.bank; persist();
+    $('overTitle').textContent = 'RUN OVER';
+    $('overStats').innerHTML = row('Distance', r.dist + ' ∞') + row('Coins', r.coins) + row('Score', r.score.toLocaleString()) +
+      row('Coins banked', '🪙 +' + r.bank) + `<div class="best bank-line">🪙 ${save.coins} in your wallet</div>` + (isBest ? '<div class="best">★ NEW BEST ★</div>' : '');
+    $('overTip').textContent = 'TIP: ' + DR.ENDLESS_TIPS[(Math.random() * DR.ENDLESS_TIPS.length) | 0];
+    show('scrOver');
+  }
+
   function onEnd(r) {
     if (r.endless) return endlessOver(r);
     const L = LEVELS[r.level - 1];
@@ -204,7 +303,7 @@
       persist();
       const last = r.level === LEVELS.length;
       $('resTitle').textContent = last ? 'EXTINCTION AVERTED!' : L.boss ? 'BOSS DEFEATED!' : 'WORLD CLEAR!';
-      $('resStats').innerHTML = row('Distance', r.dist + ' m') + row('Coins', `${r.coins} / ${r.coinsTotal}`) + row('Close calls', r.close) +
+      $('resStats').innerHTML = row('Distance', r.dist + ' ∞') + row('Coins', `${r.coins} / ${r.coinsTotal}`) + row('Close calls', r.close) +
         row('Hits taken', r.hits) + row('Time', r.time.toFixed(1) + 's') + row('SCORE', r.score.toLocaleString()) + bankRows + (isBest ? '<div class="mt-[6px] font-extrabold tracking-[2px] text-[#4ade80]">★ NEW BEST ★</div>' : '');
       $('btnNext').classList.toggle('hidden', last);
       if (last) $('resStats').innerHTML += '<div class="mt-[6px] font-extrabold tracking-[2px] text-[var(--accent)]">You saved the dinosaurs. Legend.</div>';
@@ -214,7 +313,7 @@
         const D = fresh[fresh.length - 1];
         const unlockCanvas = dinoCard(D, 54, 36); unlockCanvas.className = 'h-9 w-[54px] [image-rendering:pixelated]'; un.appendChild(unlockCanvas);
         const t = document.createElement('div');
-        t.innerHTML = `<div class="text-[9px] font-extrabold tracking-[2px] text-[var(--accent)]">NEW DINO UNLOCKED${fresh.length > 1 ? ` (+${fresh.length - 1} more)` : ''}</div><div class="text-[13px] font-black">${D.name} <span class="text-[10px] tracking-wide text-[var(--accent)] [text-shadow:0_0_8px_rgba(255,207,74,.5)]">${DR.powerStars(D.id)}</span></div>`;
+        t.innerHTML = `<div class="text-[9px] font-extrabold tracking-[2px] text-[var(--accent)]">NEW DINO UNLOCKED${fresh.length > 1 ? ` (+${fresh.length - 1} more)` : ''}</div><div class="font-pixel text-[26px] leading-none">${D.name} <span class="text-[10px] tracking-wide text-[var(--accent)] [text-shadow:0_0_8px_rgba(255,207,74,.5)]">${DR.powerStars(D.id)}</span></div>`;
         un.appendChild(t);
         setTimeout(() => DR.Audio.sfx('heart'), 1650);
       }
@@ -225,6 +324,7 @@
     } else {
       $('overStats').innerHTML = row('Made it', Math.round(r.dist / L.goal * 100) + '%') + row('Coins', r.coins) + row('Score', r.score.toLocaleString()) + bankRows;
       $('overTip').textContent = 'TIP: ' + L.tips[(Math.random() * L.tips.length) | 0];
+      $('overTitle').textContent = 'Extinct';
       show('scrOver');
     }
   }
@@ -237,7 +337,7 @@
   const spin = { a: 0, drag: false, lastX: 0, vel: 0 };
   function silhouette(img) {
     const t = DR.Sprites.mk(img.width, img.height), g = t.getContext('2d');
-    g.drawImage(img, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = '#05040a'; g.fillRect(0, 0, t.width, t.height);
+    g.drawImage(img, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = '#3b3652'; g.fillRect(0, 0, t.width, t.height);
     return t;
   }
   // Side wall of the slab: the body colours, darkened, without the sprite's outline
@@ -266,11 +366,13 @@
   function drawTurntable(c, D, t) {
     const g = c.getContext('2d'), W = c.width, H = c.height;
     g.clearRect(0, 0, W, H); g.imageSmoothingEnabled = false;
-    const fr = turnFrames(D, !isOpen(D))[Math.floor(t / 110) % 4];
-    const img = fr.face, S = Math.floor(Math.min(W / (img.width + 6), H / (img.height + 6)));
+    const locked = !isOpen(D), frames = turnFrames(D, locked), fr = frames[Math.floor(t / 110) % 4], base = frames[0].face;
+    const img = fr.face, S = locked
+      ? Math.max(1, Math.floor(Math.min(CAGE.innerW / base.width, CAGE.innerH / base.height)))
+      : Math.floor(Math.min(W / (base.width + 6), H / (base.height + 6)));
     const cos = Math.cos(spin.a), sin = Math.sin(spin.a);
     const depth = 6 * S, step = Math.max(1, Math.floor(S / 2)); // slab thickness in screen px
-    const cx = W / 2, floor = H - 10, top = floor - img.height * S + (img.ay || 0) * S, w = img.width * S;
+    const cx = W / 2, floor = locked ? CAGE.floor : H - 10, top = floor - img.height * S + (img.ay || 0) * S, w = img.width * S;
     // ground shadow, squashed by the current facing
     g.fillStyle = 'rgba(0,0,0,.35)';
     g.beginPath(); g.ellipse(cx, floor + 2, w * (.25 + .2 * Math.abs(cos)) + depth * .3 * Math.abs(sin), 5, 0, 0, Math.PI * 2); g.fill();
@@ -320,29 +422,30 @@
   function buildDino(flash = null) {
     const D = dinoById(pageId), open = isOpen(D), equipped = save.dino === D.id;
     $('walletN').textContent = save.coins.toLocaleString();
+    setCage($('dpStage'), !open);
     $('dpName').textContent = D.name;
     $('dpPower').textContent = 'POWER ' + DR.powerStars(D.id);
-    $('dpEra').textContent = D.era;
-    $('dpPerk').textContent = '🔒 ' + DR.dinoHint(D);
-    $('dpPerk').classList.toggle('hidden', open);
+    $('dpPerk').innerHTML = `${cageIcon(13)}<span>${DR.dinoHint(D)}</span>`;
+    $('dpPerk').classList.toggle('hidden', open); $('dpPerk').classList.toggle('flex', !open);
     const eq = $('dpEquip');
     eq.classList.toggle('hidden', !open);
     eq.textContent = equipped ? '✓ EQUIPPED' : 'EQUIP';
-    const equippedLook = ['bg-gradient-to-b', 'from-[#ffd65c]', 'to-[#ff8a3d]', 'text-[#2a1004]', 'border-[#fff3c4]', 'shadow-[0_4px_0_#8a3510,0_0_24px_rgba(255,150,60,.35)]'];
-    equippedLook.forEach(cls => eq.classList.toggle(cls, !equipped));
-    ['bg-[rgba(20,16,32,.6)]', 'border-white/20', 'shadow-[0_4px_0_rgba(0,0,0,.5)]'].forEach(cls => eq.classList.toggle(cls, equipped));
+    const primary = ['bg-[var(--accent)]', 'text-[#1a1205]', 'border-transparent', 'shadow-[0_0_20px_rgba(255,190,60,.3)]', 'hover:brightness-110'];
+    const quiet = ['bg-white/5', 'text-white/70', 'border-white/20', 'cursor-default'];
+    primary.forEach(cls => eq.classList.toggle(cls, !equipped));
+    quiet.forEach(cls => eq.classList.toggle(cls, equipped));
     const list = $('dpSkills'); list.innerHTML = '';
     const base = DR.baseBars(D.id), now = barsNow(D.id), mine = boughtOf(D.id);
     DR.STATS.forEach(st => {
       const n = now[st.id], maxed = n >= DR.MAX_BARS, cost = maxed ? 0 : DR.barCost(n, D.id), can = open && !maxed && save.coins >= cost;
       const card = document.createElement('div');
-      card.className = `relative grid grid-cols-[38px_1fr_auto] items-center gap-[10px] rounded-xl border border-white/15 bg-gradient-to-b from-white/[.08] to-white/[.02] px-[10px] py-[9px] shadow-[0_3px_0_rgba(0,0,0,.5)] ${st.id === flash ? 'animate-[unlockIn_.4s_cubic-bezier(.2,1.6,.4,1)] border-[var(--accent)]' : ''}`;
+      card.className = `flex items-stretch gap-3 rounded-2xl border bg-[#0b0a12] p-3 ${st.id === flash ? 'animate-[unlockIn_.4s_cubic-bezier(.2,1.6,.4,1)] border-[var(--accent)]' : 'border-white/10'}`;
       const meter = Array.from({ length: DR.MAX_BARS }, (_, i) =>
-        `<i class="relative h-[9px] flex-1 rounded-[2px] ${i < base[st.id] ? 'bg-[#cfd6e4]' : i < n ? 'bg-[var(--accent)] shadow-[0_0_6px_var(--accent)]' : 'bg-white/10'} ${((st.id === 'tough' && (i === 4 || i === 9)) || (st.id === 'agile' && i === 4)) ? 'after:content-[\'\'] after:absolute after:left-1/2 after:bottom-[-4px] after:ml-[-1.5px] after:h-[3px] after:w-[3px] after:rounded-full after:bg-[#7df9a8]' : ''}"></i>`).join('');
-      card.innerHTML = `<div class="grid h-[38px] w-[38px] place-items-center rounded-[10px] border border-[rgba(255,207,74,.35)] bg-[rgba(255,207,74,.1)] text-xl text-[var(--accent)]">${st.icon}</div><div><div class="text-xs font-black tracking-wide">${st.name} <span class="ml-1 text-[10px] tracking-wide opacity-60">${n}/${DR.MAX_BARS}</span></div><div class="my-[5px] flex gap-[3px]">${meter}</div><div class="mt-0.5 text-[9px] leading-[1.3] opacity-80">${st.hint}</div></div>`;
+        `<i class="relative min-h-[38px] flex-1 rounded-md ${i < n ? 'bg-[var(--accent)]' : 'bg-white/[.07]'} ${((st.id === 'tough' && (i === 4 || i === 9)) || (st.id === 'agile' && i === 4)) ? 'after:content-[\'\'] after:absolute after:left-1/2 after:bottom-1 after:ml-[-2px] after:h-[4px] after:w-[4px] after:rounded-full after:bg-[#0b0a12]' : ''}"></i>`).join('');
+      card.innerHTML = `<div class="flex w-[58px] shrink-0 flex-col items-center justify-center gap-1 text-center"><div class="text-xl leading-none text-[var(--accent)]">${st.icon}</div><span class="text-[11px] font-black tracking-wider">${st.name}</span><span class="font-mono text-[10px] opacity-60">${n}/${DR.MAX_BARS}</span></div><div class="flex min-w-0 flex-1 gap-1.5">${meter}</div>`;
       const b = document.createElement('button');
-      b.className = `min-w-[62px] rounded-[9px] px-[6px] py-2 font-mono text-xs font-black ${maxed ? 'cursor-default bg-transparent text-[#7df9a8] shadow-none' : can ? 'cursor-pointer bg-gradient-to-b from-[#ffd96b] to-[#f0a030] text-[#1a1205] shadow-[0_3px_0_#8a5a14] active:translate-y-0.5 active:shadow-[0_1px_0_#8a5a14]' : 'cursor-not-allowed bg-white/10 text-white/50 shadow-none'}`;
-      b.textContent = maxed ? 'MAX' : `🪙 ${cost}`;
+      b.className = `flex min-w-[64px] items-center justify-center gap-1.5 self-center rounded-full px-3 py-2 font-mono text-xs font-black ${maxed ? 'cursor-default text-[#7df9a8]' : can ? 'cursor-pointer bg-[var(--accent)] text-[#1a1205] hover:brightness-110 active:translate-y-px' : 'cursor-not-allowed border border-white/10 bg-black/50 text-white/40'}`;
+      b.innerHTML = maxed ? 'MAX' : `<i class="coin-dot"></i>${cost}`;
       b.onclick = () => {
         if (maxed) return;
         if (!can) { DR.Audio.sfx('warn'); $('wallet').classList.remove('animate-[heartPop_.3s_reverse]'); void $('wallet').offsetWidth; $('wallet').classList.add('animate-[heartPop_.3s_reverse]'); return; }
@@ -383,13 +486,15 @@
       const card = document.createElement('button');
       card.className = `dex relative flex cursor-pointer flex-col items-center gap-[3px] rounded-xl border bg-gradient-to-b from-white/[.08] to-white/[.02] px-[6px] pt-2 pb-[9px] text-center text-white shadow-[0_3px_0_rgba(0,0,0,.5)] transition-[transform,border-color] duration-[120ms] hover:-translate-y-0.5 ${locked ? 'locked cursor-not-allowed' : 'border-white/15 hover:border-white/40'} ${D.id === save.dino ? 'on border-[var(--accent)] shadow-[0_0_0_1px_var(--accent),0_0_18px_rgba(255,207,74,.25),0_3px_0_rgba(0,0,0,.5)]' : ''}`;
       const cv = dinoCard(D, 48, 32, 'stand', locked); cv.dataset.id = D.id;
-      cv.className = 'h-16 w-24 [image-rendering:pixelated]';
-      card.appendChild(cv);
+      cv.className = 'relative h-16 w-24 [image-rendering:pixelated]';
+      const thumb = document.createElement('div'); thumb.className = 'relative h-16 w-24';
+      thumb.appendChild(cv); setCage(thumb, locked); card.appendChild(thumb);
       const info = document.createElement('div');
       info.innerHTML = locked
-        ? `<div class="text-[11px] font-black tracking-wide opacity-50 ${D.name.length > 14 ? 'text-[8.5px] tracking-normal' : ''}">${D.name}</div><div class="text-[8.5px] tracking-wide opacity-60">${D.era}</div><div class="text-[10px] tracking-wide text-[var(--accent)] [text-shadow:0_0_8px_rgba(255,207,74,.5)]">${DR.powerStars(D.id)}</div><div class="flex min-h-6 items-center text-[9.5px] leading-[1.25] text-[#ff8a8a]">🔒 ${DR.dinoHint(D)}</div>`
-        : `<div class="text-[11px] font-black tracking-wide ${D.name.length > 14 ? 'text-[8.5px] tracking-normal' : ''}">${D.name}</div><div class="text-[8.5px] tracking-wide opacity-60">${D.era}</div><div class="text-[10px] tracking-wide text-[var(--accent)] [text-shadow:0_0_8px_rgba(255,207,74,.5)]">${DR.powerStars(D.id)}</div>`;
+        ? `<div class="font-pixel text-[15px] leading-none tracking-wide opacity-50 ${D.name.length > 14 ? 'text-[12px] tracking-normal' : ''}">${D.name}</div><div class="text-[8.5px] tracking-wide opacity-60">${D.era}</div><div class="text-[10px] tracking-wide text-[var(--accent)] [text-shadow:0_0_8px_rgba(255,207,74,.5)]">${DR.powerStars(D.id)}</div><div class="flex min-h-6 items-center justify-center gap-1 text-[9.5px] leading-[1.25] text-white/60">${cageIcon(10)}<span>${DR.dinoHint(D)}</span></div>`
+        : `<div class="font-pixel text-[15px] leading-none tracking-wide ${D.name.length > 14 ? 'text-[12px] tracking-normal' : ''}">${D.name}</div><div class="text-[8.5px] tracking-wide opacity-60">${D.era}</div><div class="text-[10px] tracking-wide text-[var(--accent)] [text-shadow:0_0_8px_rgba(255,207,74,.5)]">${DR.powerStars(D.id)}</div>`;
       card.appendChild(info);
+      if (locked) { const tag = document.createElement('span'); tag.className = 'absolute -top-[7px] rounded border border-[rgba(255,207,74,.35)] bg-[#2a2638] px-[6px] py-px text-[8px] font-black tracking-[2px] text-[var(--accent)]'; tag.textContent = 'CAGED'; card.appendChild(tag); }
       if (D.id === save.dino) { const badge = document.createElement('span'); badge.className = 'absolute -top-[7px] rounded bg-[var(--accent)] px-[6px] py-px text-[8px] font-black tracking-[2px] text-black'; badge.textContent = 'EQUIPPED'; card.appendChild(badge); }
       if (save.dexNew.includes(D.id)) { const badge = document.createElement('span'); badge.className = 'absolute top-[6px] right-[6px] animate-[blink_1s_infinite] rounded-[3px] bg-[#ff3b5c] px-1 py-px text-[8px] font-black'; badge.textContent = 'NEW'; card.appendChild(badge); }
       card.onclick = () => { DR.Audio.sfx('click'); cancelAnimationFrame(dexAnim); openDino(D.id, 'scrDex'); };
