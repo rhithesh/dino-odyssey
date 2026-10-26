@@ -31,7 +31,7 @@
     if (L.pits && r < .42) {
       const w = 30 + R() * 18 * (.6 + d);
       this.obs.push({ kind: 'pit', x, w, y: this.GY, h: 0, t: 0, glow: 26 });
-      this.addCoinArc(x + w / 2, this.GY - 58, 5);
+      this.addCoinArc(x + w / 2, 'full', 5);
       return;
     }
     if (d >= L.flyerFrom && r < .66) { this.addFlyer(x, pick(['low', 'mid', 'mid', 'high'])); return; }
@@ -40,7 +40,7 @@
     let cx = x;
     for (let i = 0; i < n; i++) { const o = this.addGround(cx, big ? 'L' : 'S'); cx += o.w - 1; }
     const span = cx - x;
-    if (R() < .45) this.addCoinArc(x + span / 2, this.GY - (big ? 66 : 56), 5);
+    if (R() < .45) this.addCoinArc(x + span / 2, big ? 'full' : 'hop', 5);
     else if (R() < .35) this.addCoinLine(cx + 40, this.GY - 9, 4);
   };
 
@@ -107,7 +107,7 @@
       kind: 'laser', x, y: hi ? GY - 23 : GY - 9, w, h: hi ? 12 : 8, hi,
       t: 0, period: 1.6 + R() * .3, warn: .42, fire: .5, on: false, wasOn: false, glow: 26,
     });
-    if (R() < .5) this.addCoinArc(x + w / 2, GY - (hi ? 46 : 62), 3);
+    if (R() < .5 && !hi) this.addCoinArc(x + w / 2, 'hop', 3);
   };
   // Raised rock shelf wide enough to ride out a whole surge.
   G.addPlat = function (x, w = 560) {
@@ -143,8 +143,16 @@
     const trigX = landX + this.speed * ft;
     this.obs.push({ kind: 'faller', sub, x: trigX, y: -24, vy: 0, trigX, w: 8, h: 12, t: 0, glow: sub === 'meteor' ? 30 : 0 });
   };
-  G.addCoinArc = function (cx, topY, n) {
-    for (let i = 0; i < n; i++) { const k = (i / (n - 1)) * 2 - 1; this.coins.push({ x: cx - 3 + k * 26, y: topY + k * k * 20, t: i * .2 }); }
+  // Coins along the dino's real jump path ('hop' = tap, 'full' = held), apex over cx, for the current
+  // species, Jump bars and run speed. Coin i sits where the dino's body will be τ seconds from the apex.
+  G.addCoinArc = function (cx, type, n) {
+    const J = this.jump(), H = type === 'full' ? J.H : J.hop, v = Math.max(60, this.speed), fall = DR.JUMP.FALL;
+    const rise = Math.sqrt(2 * H / J.g), drop = rise / Math.sqrt(fall);
+    for (let i = 0; i < n; i++) {
+      const s = i / (n - 1), tau = s < .5 ? -rise * .7 * (1 - 2 * s) : drop * .7 * (2 * s - 1);
+      const h = H - .5 * J.g * (tau < 0 ? 1 : fall) * tau * tau;
+      this.coins.push({ x: cx - 4.5 + tau * v, y: this.GY - 9 - h - 4.5, t: i * .2 });
+    }
     this.coinsSpawned += n;
   };
   G.addCoinLine = function (x, y, n, dx = 14) { for (let i = 0; i < n; i++) this.coins.push({ x: x + i * dx, y: y - 3, t: i * .2 }); this.coinsSpawned += n; };
@@ -249,10 +257,10 @@
     for (let i = this.coins.length - 1; i >= 0; i--) {
       const c = this.coins[i]; c.x -= sp; c.t += dt;
       const m = this.st.magnet + (this.magnetT > 0 ? 70 : 0);
-      if (canHit && !this.demo && overlap({ x: pb.x - m, y: pb.y - m, w: pb.w + m * 2, h: pb.h + m * 2 }, { x: c.x, y: c.y, w: 6, h: 6 })) {
+      if (canHit && !this.demo && overlap({ x: pb.x - m, y: pb.y - m, w: pb.w + m * 2, h: pb.h + m * 2 }, { x: c.x - 3, y: c.y - 3, w: 15, h: 15 })) {
         this.coins.splice(i, 1); this.coinN++; const worth = this.st.coinMul * (1 + this.st.coinBonus); this.bank += worth; this.score += 10 * worth * this.mult();
-        if (worth > 1.01) this.fx.text(c.x + 3, c.y - 4, '+' + (Math.round(worth * 10) / 10), '#ffc400', 7, .5); DR.Audio.sfx('coin');
-        this.fx.burst(c.x + 3, c.y + 3, 6, { color: ['#ffc400', '#fff6b0'], speed: 70, grav: 0, life: .3, size: 1.5, glow: true });
+        if (worth > 1.01) this.fx.text(c.x + 4.5, c.y - 4, '+' + (Math.round(worth * 10) / 10), '#ffc400', 7, .5); DR.Audio.sfx('coin');
+        this.fx.burst(c.x + 4.5, c.y + 4.5, 6, { color: ['#ffc400', '#fff6b0'], speed: 70, grav: 0, life: .3, size: 1.5, glow: true });
         continue;
       }
       if (c.x < -10) this.coins.splice(i, 1);

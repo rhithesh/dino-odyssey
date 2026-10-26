@@ -366,13 +366,21 @@ window.DR = window.DR || {};
   }
 
   // ---------------- Small pickups ----------------
+  // Spinning coin, COIN px across: a round pixel disc squashed horizontally per frame (face, 3/4, edge, 3/4).
+  const COIN = 9;
   function coinFrames() {
-    const widths = [6, 4, 2, 4];
-    return widths.map(w => {
-      const c = mk(6, 6), g = c.getContext('2d'), x0 = (6 - w) / 2;
-      g.fillStyle = '#b37a00'; g.fillRect(x0, 0, w, 6);
-      g.fillStyle = '#ffc400'; g.fillRect(x0, 1, w, 4); if (w > 2) g.fillRect(x0 + 1, 0, w - 2, 6);
-      g.fillStyle = '#fff6b0'; g.fillRect(x0 + (w > 2 ? 1 : 0), 1, 1, 2);
+    const r = COIN / 2;
+    return [1, .66, .3, .66].map(k => {
+      const c = mk(COIN, COIN), g = c.getContext('2d');
+      const row = (y, rad, col) => {
+        const dy = y + .5 - r, hw = Math.round(Math.sqrt(Math.max(0, rad * rad - dy * dy)) * k);
+        if (hw > 0) { g.fillStyle = col; g.fillRect(Math.round(r - hw), y, hw * 2, 1); }
+        else if (Math.abs(dy) < rad) { g.fillStyle = col; g.fillRect(Math.floor(r - .5), y, 1, 1); }
+      };
+      for (let y = 0; y < COIN; y++) row(y, r, '#b37a00');        // rim
+      for (let y = 1; y < COIN - 1; y++) row(y, r - 1, '#ffc400'); // face
+      if (k > .5) { g.fillStyle = '#fff6b0'; g.fillRect(Math.round(r - 2 * k), 2, 1, 3); g.fillRect(Math.round(r - 2 * k) + 1, 2, 1, 1); }
+      if (k === 1) { g.fillStyle = '#d99a00'; g.fillRect(r - .5 | 0, 3, 1, 3); } // stamped mark
       return c;
     });
   }

@@ -8,6 +8,10 @@
   const FONT = s => `900 ${s}px ui-monospace, "SF Mono", Menlo, monospace`;
 
   const STEP_PX = 9; // world px scrolled per walk frame (4 frames = one full stride)
+  // Jump feel (see Game.jump): hop = HOP x full height; a press held for HOLD_WIN s commits to the full jump;
+  // falling uses FALL x the rise gravity.
+  const HOP = .6, HOLD_WIN = .1, FALL = 1.45;
+  DR.JUMP = { HOP, HOLD_WIN, FALL };
 
   class Game {
     [key: string]: any;
@@ -64,7 +68,7 @@
         shake: 0, hitstop: 0, slow: 1, zoom: demo ? 1 : 1.35, lb: demo ? 0 : 1, trail: [], runTime: 0, ceilA: L.mode === 'flip' ? 1 : 0,
         tidePhase: 'idle', tideT: 7 + Math.random() * 3, tideLevel: 0, tideHit: false, waterY: this.GY, laserFlip: false,
       });
-      this.p = { x: demo ? 50 : -40, y: this.GY, vy: 0, g: 1, onGround: true, duck: false, inv: 0, coyote: 0, buf: 0, hold: 0, rot: 0, dead: false, air: this.st.air, airT: 0, dash: 0, dashCd: 0 };
+      this.p = { x: demo ? 50 : -40, y: this.GY, vy: 0, g: 1, onGround: true, duck: false, inv: 0, coyote: 0, buf: 0, hold: 0, rot: 0, dead: false, air: this.st.air, airT: 0, dash: 0, dashCd: 0, jt: -1, y0: 0, cut: true, sq: 0 };
       this.phase = demo ? 'demo' : 'intro';
       this.phaseT = quick ? 1.8 : 0;
       this.paused = false; this.ended = false;
@@ -79,7 +83,7 @@
       const p = this.p;
       // Double jump: only from a real mid-air press (not just before landing, which should buffer a normal jump).
       if (this.mode === 'run' && !p.onGround && p.coyote <= 0 && p.air > 0 && p.airT > .06 && this.GY - p.y > 24) {
-        p.air--; p.vy = -this.st.jumpV * (this.st.airPow || .88); p.hold = this.st.hold * .6; p.buf = 0;
+        p.air--; p.vy = -this.jump().v0 * (this.st.airPow || .88); p.cut = true; p.jt = -1; p.sq = .7; p.buf = 0;
         DR.Audio.sfx('jump');
         this.fx.ring(p.x + 10, p.y - 2, this.L.palette.accent, 18, .3);
         this.fx.burst(p.x + 10, p.y - 2, 8, { color: [this.L.palette.accent, '#fff'], speed: 80, angle: Math.PI / 2, spread: 1.6, life: .3, grav: 0, size: 1.5, glow: true });
@@ -114,7 +118,7 @@
         this.fx.burst(p.x + 10, p.y, 10, { color: [this.L.palette.accent, '#fff'], speed: 90, grav: 0, life: .35 });
         this.fx.ring(p.x + 10, p.y - 9 * p.g, this.L.palette.accent, 22, .3);
       } else {
-        p.vy = -this.st.jumpV; p.hold = this.st.hold; p.onGround = false; DR.Audio.sfx('jump');
+        p.vy = -this.jump().v0; p.jt = 0; p.y0 = p.y; p.cut = false; p.sq = 1; p.onGround = false; DR.Audio.sfx('jump');
         this.fx.burst(p.x + 8, p.floor || this.GY, 6, { color: this.L.palette.groundDark, speed: 60, angle: -Math.PI / 2, spread: 2, life: .35, grav: 400 });
       }
     }
@@ -222,7 +226,21 @@
       if (!this.demo) this.hooks.hud && this.hooks.hud(this.hudState());
     }
 
+    // Jump model "two-step": a tap gives a short hop, holding past HOLD_WIN gives the full jump; never anything
+    // in between. Tuned by height and time-to-apex; gravity and launch speed are derived from them.
+    //   H     full-jump height (game px). Scales with jumpV², so +8 jumpV per Jump bar ≈ +2.7% height.
+    //   T     time to apex. Longer `hold` stats (gliders) get a floatier, slower rise.
+    jump() {
+      const st = this.st, H = 120 * (st.jumpV / 600) ** 2, T = .34 * (1 + (st.hold - .2));
+      return { H, hop: H * HOP, g: 2 * H / (T * T), v0: 2 * H / T };
+    }
+    // Physics runs in equal substeps of at most 1/240 s so arcs are the same at any frame rate.
     updatePlayer(dt) {
+      const n = Math.max(1, Math.ceil(dt * 240)), h = dt / n;
+      for (let i = 0; i < n; i++) this.stepPlayer(h);
+      this.p.sq *= Math.max(0, 1 - dt * 9);
+    }
+    stepPlayer(dt) {
       const p = this.p, GY = this.GY;
       if (p.buf > 0) { p.buf -= dt; if (this.live()) this.tryAction(); }
       p.duck = false;
@@ -246,15 +264,24 @@
         return;
       }
       // classic run physics
-      let g = 2600;
-      if (p.vy < 0 && this.keys.jump && p.hold > 0) { g *= .42; p.hold -= dt; } else p.hold = 0;
-      if (this.keys.duck && !p.onGround) g *= this.st.fall;
+      const J = this.jump();
+      if (p.jt >= 0) p.jt += dt;
+      // released inside the hold window: trim the rise so the jump peaks at exactly the hop height
+      if (!p.cut && !this.keys.jump && p.vy < 0) {
+        const need = J.hop - (p.y0 - p.y);
+        p.vy = need > 0 ? -Math.sqrt(2 * J.g * need) : 0; p.cut = true;
+      }
+      if (!p.cut && p.jt >= HOLD_WIN) p.cut = true; // held long enough: committed to the full jump
+      let g = J.g;
+      if (p.vy >= 0) g *= FALL;                                   // snappier fall than rise
+      else if (this.keys.jump && p.vy > -70) g *= .6;             // brief hang at the top of a held jump
+      if (this.keys.duck && !p.onGround) g = J.g * this.st.fall;  // fast drop
       const prevY = p.y;
       p.vy += g * dt; p.y += p.vy * dt;
       const pit = this.pitUnder(p.x + 10);
       const was = p.onGround;
       p.floor = GY;
-      if (p.y >= GY && !pit) { p.y = GY; p.vy = 0; p.onGround = true; if (!was) this.land(); }
+      if (p.y >= GY && !pit) { p.y = GY; p.vy = 0; p.onGround = true; if (!was) { p.sq = -1; this.land(); } }
       else if (p.y > GY && pit) {
         p.onGround = false;
         if (p.y > GY + 8 && this.perks.lava > 0 && p.inv <= 0 && !this.demo) { this.perks.lava--; p.vy = -720; p.y = GY + 8; this.perkFx('HOT HOP!', '#ff8a00'); }
@@ -267,12 +294,12 @@
           if (o.kind !== 'plat' || px < o.x + 1 || px > o.x + o.w - 1) continue;
           if (prevY <= o.y + 2 && p.y >= o.y) {
             p.y = o.y; p.vy = 0; p.onGround = true; p.floor = o.y;
-            if (!was) this.land();
+            if (!was) { p.sq = -1; this.land(); }
             break;
           }
         }
       }
-      if (p.onGround) { p.coyote = this.st.coyote; p.duck = this.keys.duck; p.air = this.st.air; p.airT = 0; } else { p.coyote -= dt; p.airT += dt; }
+      if (p.onGround) { p.coyote = this.st.coyote; p.duck = this.keys.duck; p.air = this.st.air; p.airT = 0; p.jt = -1; p.cut = true; } else { p.coyote -= dt; p.airT += dt; }
     }
     land() {
       const p = this.p;
@@ -537,6 +564,11 @@
       if (this.L.retro) { ctx.shadowColor = 'rgba(70,70,70,.45)'; ctx.shadowBlur = 2; ctx.shadowOffsetY = 1; }
       ctx.translate(Math.round(cx), Math.round(cy));
       if (p.rot) ctx.rotate(p.rot);
+      // squash & stretch: sq > 0 stretches (take-off), sq < 0 squashes (landing); scaled about the feet
+      if (Math.abs(p.sq) > .02 && !flipped && this.mode !== 'swim') {
+        const sy = 1 + .12 * p.sq, sx = 1 - .1 * p.sq, foot = img.height / 2;
+        ctx.translate(0, foot); ctx.scale(sx, sy); ctx.translate(0, -foot);
+      }
       if (flipped) ctx.scale(1, -1);
       ctx.drawImage(img, -Math.round(img.width / 2), -Math.round(img.height / 2));
       ctx.restore();
