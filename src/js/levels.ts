@@ -92,6 +92,15 @@ DR.LEVELS = [
     music: { bpm: 126, root: 60, scale: 'major', prog: [0, 4, 5, 3], lead: 'square', seed: 99 },
     tips: ['↑ jump, ↓ duck. Cacti hurt. Pterodactyls hurt more.', 'The real one: paper-white sky, no mercy.'],
   },
+  {
+    // traffic: oncoming autos, delivery bikes, cabs and rideable lorries (see addVehicle). Barricades are metro work.
+    id: 12, name: 'INDIRANAGAR', tagline: '100 Feet Road. Peak hour. Clear skies.', twist: 'PEAK TRAFFIC — autos, bikes, cars & trucks',
+    mode: 'run', bg: 'indiranagar', weather: 'none', ground: 'barrier', flyer: 'kite', traffic: true, roadHazards: true, finishStyle: 'signal', alwaysOpen: true,
+    goal: 1100, speed: [205, 290], gap: [1.0, 1.8], flyerFrom: .35,
+    palette: { skyTop: '#2f6fd0', skyMid: '#5f9fe6', skyBot: '#b8dcff', sun: '#fff6d0', far: '#8a9bb8', mid: '#6e7f9c', near: '#2b1f2a', ground: '#3d3a42', groundDark: '#2a272e', line: '#e8c23a', dino: '#1e1a24', dinoEye: '#fff1d6', obstacle: '#e8e4d8', flyer: '#2b1f2a', accent: '#ffd23f', accent2: '#3fbf6f', grade: 'rgba(0,0,0,0)' },
+    music: { bpm: 122, root: 55, scale: 'major', prog: [0, 5, 3, 4], lead: 'square', arp: 'triangle', echo: true, seed: 112 },
+    tips: ['A horn means something fast is coming. Watch the right edge.', 'Lorries are slow and flat on top. Land on one and ride it.', 'Delivery bikes travel in pairs.', 'Potholes and speed humps cost a quarter heart. Hop them.', 'Some say there is a white auto. Very rare.'],
+  },
 ];
 
 // ENDLESS: one rule set (run, no finish line). The scenery rotates through the

@@ -11,7 +11,102 @@
   // Jump feel (see Game.jump): hop = HOP x full height; a press held for HOLD_WIN s commits to the full jump;
   // falling uses FALL x the rise gravity.
   const HOP = .6, HOLD_WIN = .1, FALL = 1.45;
+  const CHIP = { pothole: .25, hump: .25 }; // damage sources that cost a fraction of a heart
   DR.JUMP = { HOP, HOLD_WIN, FALL };
+
+  // KFC Signal's corner building as it looks now: rooftop block sheds, Pizza Hut's black fascia with Kannada
+  // lettering, a red trim line, blue curtain glass, SNITCH in patterned silver cladding, a red side tower,
+  // store windows and a coconut palm in front. Painted once and reused.
+  const CORNER_W = 132, CORNER_H = 128;
+  let CORNER = null;
+  function cornerArt() {
+    if (CORNER) return CORNER;
+    const W = CORNER_W, H = CORNER_H, c = DR.Sprites.mk(W, H), g = c.getContext('2d');
+    const F = (col, x, y, w, h) => { g.fillStyle = col; g.fillRect(Math.round(x), Math.round(y), w, h); };
+    const disc = (cx, cy, r, col) => { g.fillStyle = col; for (let y = -r; y <= r; y++) { const hw = Math.round(Math.sqrt(r * r - y * y)); g.fillRect(cx - hw, cy + y, hw * 2 + 1, 1); } };
+    let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const L = 26, R = W - 2, BW = R - L; // main block spans L..R
+
+    // Rooftop: concrete-block sheds behind the parapet, a glazed stair room, a water tank.
+    F('#c4c7c4', L + 34, 2, BW - 36, 14);
+    for (let y = 4; y < 16; y += 3) F('#a7aba8', L + 34, y, BW - 36, 1);
+    for (let y = 2; y < 16; y += 3) for (let x = L + 34 + ((y / 3 | 0) % 2) * 4; x < R - 2; x += 8) F('#a7aba8', x, y, 1, 3);
+    F('#8e9290', L + 34, 2, BW - 36, 1);
+    F('#3a3c42', L + 12, 6, 24, 10); F('#7d8792', L + 13, 7, 22, 8); for (let x = L + 12; x <= L + 36; x += 6) F('#2a2c30', x, 6, 1, 10);
+    F('#1d1c22', R - 16, 0, 8, 6); F('#34333c', R - 15, 0, 2, 6);
+    F('#dcdedb', L + 4, 16, BW - 4, 3); F('#9a9e9c', L + 4, 19, BW - 4, 1);
+
+    // Pizza Hut fascia.
+    F('#1b1c21', L + 4, 20, BW - 4, 22); F('#2c2e36', L + 4, 20, BW - 4, 1);
+    for (let x = L + 20; x < R; x += 18) F('#25262d', x, 21, 1, 21);
+    disc(L + 20, 31, 7, '#f4f4f0'); disc(L + 20, 31, 6, '#d0302a');
+    F('#ffffff', L + 18, 27, 5, 1); F('#ffffff', L + 16, 28, 9, 1); F('#ffffff', L + 15, 29, 11, 2); F('#d0302a', L + 15, 31, 11, 1); F('#ffffff', L + 15, 32, 11, 1);
+    const kn = DR.Sprites.mk(84, 18), kg = kn.getContext('2d');
+    kg.font = '700 12px "Kannada Sangam MN", "Noto Sans Kannada", "Tunga", "Kannada MN", sans-serif';
+    kg.fillStyle = '#ffffff'; kg.textBaseline = 'middle'; kg.fillText('ಪಿಜ್ಜಾ ಹಟ್', 1, 9);
+    const id = kg.getImageData(0, 0, 84, 18); for (let i = 3; i < id.data.length; i += 4) id.data[i] = id.data[i] > 110 ? 255 : 0; kg.putImageData(id, 0, 0);
+    g.drawImage(kn, L + 32, 22);
+    F('#d4462a', L + 2, 42, BW - 2, 3); F('#f06a44', L + 2, 42, BW - 2, 1); F('#9a3018', L + 2, 45, BW - 2, 1);
+
+    // Blue curtain glass with sky and tree reflections.
+    const gy = 46, gh = 20;
+    F('#3d68ad', L + 4, gy, BW - 4, gh);
+    for (let i = 0; i < 9; i++) F('#5f8acb', L + 6 + i * 9, gy + 1, 5, 2);
+    for (let i = 0; i < 26; i++) F('#9fc0ea', L + 6 + (rnd() * (BW - 14) | 0), gy + (rnd() * 8 | 0), 1 + (rnd() * 3 | 0), 1);
+    for (let i = 0; i < 18; i++) { const bx = R - 40 + (rnd() * 36 | 0), by = gy + 6 + (rnd() * 12 | 0); disc(bx, by, 2 + (rnd() * 2 | 0), '#2a4038'); }
+    for (let x = L + 4; x < R; x += 6) F('#22385e', x, gy, 1, gh);
+    F('#22385e', L + 4, gy + 9, BW - 4, 1);
+    F('#cfd3d0', L + 2, gy + gh, BW - 2, 2); F('#8e9290', L + 2, gy + gh + 2, BW - 2, 1);
+
+    // Silver cladding with the maze-line panel pattern and warm wash lights.
+    const cy0 = gy + gh + 3, cy1 = H - 18;
+    F('#b7bbb2', L + 4, cy0, BW - 4, cy1 - cy0);
+    for (let i = 0; i < 7; i++) { const wx = L + 40 + (rnd() * (BW - 50) | 0), wy = cy0 + 4 + (rnd() * (cy1 - cy0 - 12) | 0); F('#d2d09c', wx, wy, 8 + (rnd() * 10 | 0), 4 + (rnd() * 5 | 0)); F('#e4e0b0', wx + 2, wy + 1, 4, 2); }
+    for (let i = 0; i < 70; i++) {
+      const x = L + 34 + ((rnd() * (BW - 36)) / 4 | 0) * 4, y = cy0 + ((rnd() * (cy1 - cy0)) / 4 | 0) * 4, len = 4 + (rnd() * 4 | 0) * 4;
+      if (rnd() < .5) F('#8c9188', x, y, Math.min(len, R - x), 1); else F('#8c9188', x, y, 1, Math.min(len, cy1 - y));
+    }
+    F('#ced2ca', L + 4, cy0, 1, cy1 - cy0); F('#8c9188', R - 1, cy0, 1, cy1 - cy0);
+    F('#141519', L + 8, cy0 + 4, 24, cy1 - cy0 - 6); F('#26272e', L + 9, cy0 + 5, 1, cy1 - cy0 - 8);
+    F('#5f645c', L + 47, cy0 + 19, DR.pxText.w('SNITCH', 2) + 2, 1);
+    DR.pxText.draw(g, 'SNITCH', L + 47, cy0 + 9, '#55594f', 2); DR.pxText.draw(g, 'SNITCH', L + 46, cy0 + 8, '#ffffff', 2);
+    F('#202024', R - 20, cy0 + 22, 18, cy1 - cy0 - 22); DR.pxText.draw(g, 'PIZ', R - 18, cy0 + 26, '#e0383a');
+
+    // Store front: glazing, mannequins, entrance, a footpath step.
+    F('#2a2430', L + 2, cy1, BW - 2, 18);
+    F('#e6e2d4', L + 4, cy1 + 2, BW - 26, 14); F('#f6f2e4', L + 4, cy1 + 2, BW - 26, 2);
+    const shirts = ['#c8352e', '#141414', '#2a5ab8', '#e8c23a', '#3f9a4a', '#f2f2f2'];
+    for (let i = 0; i < 6; i++) { const mx = L + 9 + i * 12; F('#cfc6bd', mx, cy1 + 5, 2, 2); F(shirts[i], mx - 1, cy1 + 7, 4, 5); F('#2a3550', mx, cy1 + 12, 2, 4); }
+    for (let x = L + 4; x < R - 22; x += 16) F('#2a2430', x, cy1 + 2, 1, 14);
+    F('#141519', R - 20, cy1 + 2, 10, 16); F('#f2c230', R - 12, cy1 + 8, 1, 2);
+    F('#9a9e9c', L, H - 1, BW + 2, 1);
+
+    // Red side tower on the left with white window boxes and a blue cap.
+    F('#2a5ab8', L - 10, 22, 14, 4);
+    F('#c8502e', L - 10, 26, 14, H - 26); F('#a83e22', L + 2, 26, 2, H - 26);
+    for (let y = 30; y < H - 8; y += 11) { F('#f2efe8', L - 8, y, 4, 5); F('#f2efe8', L - 2, y, 4, 5); F('#7a8892', L - 7, y + 1, 2, 3); F('#7a8892', L - 1, y + 1, 2, 3); }
+
+    // Coconut palm in front of the tower.
+    const px0 = 12;
+    for (let y = H - 1; y > 14; y--) {
+      const k = (H - y) / H, tx = px0 + Math.sin(k * 1.6) * 6;
+      F((H - y) % 4 ? '#7a6650' : '#54443a', tx, y, 2, 1);
+    }
+    const cx = px0 + Math.round(Math.sin((H - 14) / H * 1.6) * 6) + 1, cyy = 14;
+    for (let a = 0; a < 14; a++) {
+      const ang = -Math.PI * .97 + a * (Math.PI * 1.94 / 13), len = 15 + (a % 3) * 4;
+      for (let s2 = 0; s2 < len; s2++) {
+        const fx = cx + Math.cos(ang) * s2, fy = cyy + Math.sin(ang) * s2 * .55 + s2 * s2 * .04;
+        F('#2a5e2e', fx, fy, 2, 1);
+        if (s2 > 2 && s2 % 2 === 0) { F('#4f9a44', fx, fy + 1, 1, 2 + (s2 > len / 2 ? 1 : 0)); F('#3f7a3a', fx + 1, fy + 1, 1, 2); }
+      }
+    }
+    disc(cx - 1, cyy + 2, 1, '#7a8a2a'); disc(cx + 2, cyy + 3, 1, '#6a7a22'); disc(cx, cyy + 4, 1, '#7a8a2a');
+
+    // A sagging cable across the front.
+    for (let x = 0; x < W; x++) { const u = x / W; F('#1a1520', x, Math.round(48 + 14 * 4 * u * (1 - u)), 1, 1); }
+    return (CORNER = c);
+  }
 
   class Game {
     [key: string]: any;
@@ -87,9 +182,16 @@
         DR.Audio.sfx('jump');
         this.fx.ring(p.x + 10, p.y - 2, this.L.palette.accent, 18, .3);
         this.fx.burst(p.x + 10, p.y - 2, 8, { color: [this.L.palette.accent, '#fff'], speed: 80, angle: Math.PI / 2, spread: 1.6, life: .3, grav: 0, size: 1.5, glow: true });
+        this.sparkle(12);
         return;
       }
       p.buf = this.st.buffer;
+    }
+    // Sparkle species (the unicorn): a burst of pink, gold and white twinkles. Cosmetic only.
+    sparkle(n) {
+      if (!this.dino || !this.dino.sparkle) return;
+      const p = this.p;
+      this.fx.burst(p.x + 10, p.y - 8 * p.g, n, { color: ['#ff9fd0', '#ffd23f', '#ffffff', '#c89bff', '#e0218a'], speed: 95, grav: 60, drag: .94, life: .7, size: 2.5, glow: true, shape: 'star' });
     }
     // Dash: a short, fast burst that phases through hazards. Cooldown depends on the shop level.
     dash() {
@@ -120,6 +222,7 @@
       } else {
         p.vy = -this.jump().v0; p.jt = 0; p.y0 = p.y; p.cut = false; p.sq = 1; p.onGround = false; DR.Audio.sfx('jump');
         this.fx.burst(p.x + 8, p.floor || this.GY, 6, { color: this.L.palette.groundDark, speed: 60, angle: -Math.PI / 2, spread: 2, life: .35, grav: 400 });
+        this.sparkle(16);
       }
     }
 
@@ -185,7 +288,9 @@
           break;
         }
         case 'bossIntro': this.bossIntroUpdate(dt); break;
-        case 'boss': this.runTime += dt; this.score += this.speed * dt / 10 * this.mult(); this.bossUpdate(dt); break;
+        case 'boss': this.runTime += dt; this.score += this.speed * dt / 10 * this.mult(); this.bossUpdate(dt);
+          if (this.finish) { this.finish.x -= this.speed * dt; if (this.finish.x < p.x + 10) this.win(); }
+          break;
         case 'win': {
           this.zoom = lerp(this.zoom, 1.12, dt * 2);
           if (this.phaseT > .7) p.x += (60 + this.phaseT * 160) * dt;
@@ -239,6 +344,8 @@
       const n = Math.max(1, Math.ceil(dt * 240)), h = dt / n;
       for (let i = 0; i < n; i++) this.stepPlayer(h);
       this.p.sq *= Math.max(0, 1 - dt * 9);
+      if (this.dino && this.dino.sparkle && !this.p.onGround && this.mode !== 'swim' && Math.random() < dt * 22) // glitter trail while airborne
+        this.fx.burst(this.p.x + 4, this.p.y - 6 * this.p.g, 1, { color: ['#ff9fd0', '#ffd23f', '#ffffff'], speed: 18, grav: 20, life: .5, size: 2, glow: true, shape: 'star' });
     }
     stepPlayer(dt) {
       const p = this.p, GY = this.GY;
@@ -287,11 +394,11 @@
         if (p.y > GY + 8 && this.perks.lava > 0 && p.inv <= 0 && !this.demo) { this.perks.lava--; p.vy = -720; p.y = GY + 8; this.perkFx('HOT HOP!', '#ff8a00'); }
         else if (p.y > GY + 8) { this.damage('lava'); p.vy = -720; p.y = GY + 8; this.fx.burst(p.x + 10, GY, 18, { color: ['#ff4a00', '#ffd000', '#ff8a00'], speed: 160, life: .6, glow: true }); }
       } else p.onGround = false;
-      // Tidal Shore: raised shelves are standable — land on top, ride it, drop off the end.
-      if (this.L.tide && p.vy >= 0 && !p.onGround) {
+      // Tidal Shore shelves and Indiranagar lorries are standable — land on top, ride it, drop off the end.
+      if ((this.L.tide || this.L.traffic) && p.vy >= 0 && !p.onGround) {
         const px = p.x + 10;
         for (const o of this.obs) {
-          if (o.kind !== 'plat' || px < o.x + 1 || px > o.x + o.w - 1) continue;
+          if (!(o.kind === 'plat' || o.roof) || px < o.x + 1 || px > o.x + o.w - 1) continue;
           if (prevY <= o.y + 2 && p.y >= o.y) {
             p.y = o.y; p.vy = 0; p.onGround = true; p.floor = o.y;
             if (!was) { p.sq = -1; this.land(); }
@@ -324,7 +431,7 @@
     }
 
     damage(src) {
-      const p = this.p;
+      const p = this.p, chip = CHIP[src]; // road hazards only chip off part of a heart
       if (p.inv > 0 || p.dead || this.demo || this.phase === 'win' || this.phase === 'intro') return false;
       if (this.shieldN > 0) {
         this.shieldN--; this.shieldHit = true; p.inv = .8;
@@ -333,12 +440,20 @@
         this.shake = Math.max(this.shake, 3); DR.Audio.sfx('close');
         return false;
       }
-      this.hearts--; this.hits++; this.streak = 0; p.inv = this.st.inv;
-      this.hitstop = .09; this.shake = 9; this.penalty = .8;
-      this.fx.doFlash(.45, '#ff2040');
-      this.fx.burst(p.x + 10, p.y - 10 * p.g, 16, { color: [this.L.palette.dino, '#fff', '#ff3b5c'], speed: 160, life: .6 });
-      DR.Audio.sfx('hit');
-      this.hooks.hurt && this.hooks.hurt(this.hearts);
+      this.hits++; this.streak = 0;
+      if (chip) {
+        this.hearts = Math.max(0, this.hearts - chip); p.inv = Math.min(.35, this.st.inv);
+        this.hitstop = .03; this.shake = 4; this.penalty = .9;
+        this.fx.text(p.x + 10, p.y - 30 * p.g, '-¼♥', '#ff8a9a', 8);
+        DR.Audio.sfx('bump');
+      } else {
+        this.hearts = Math.max(0, this.hearts - 1); p.inv = this.st.inv;
+        this.hitstop = .09; this.shake = 9; this.penalty = .8;
+        this.fx.doFlash(.45, '#ff2040');
+        this.fx.burst(p.x + 10, p.y - 10 * p.g, 16, { color: [this.L.palette.dino, '#fff', '#ff3b5c'], speed: 160, life: .6 });
+        DR.Audio.sfx('hit');
+      }
+      this.hooks.hurt && this.hooks.hurt(Math.floor(this.hearts));
       if (this.hearts <= 0) this.die();
       return true;
     }
@@ -353,6 +468,11 @@
       this.setPhase('win'); this.slow = .5;
       DR.Audio.stopMusic(.6); DR.Audio.sfx('win');
       this.fx.doFlash(.6, '#fff');
+      if (this.L.finishStyle === 'signal' && this.finish) { // horn chorus and auto-coloured confetti at the board
+        for (let i = 0; i < 5; i++) setTimeout(() => DR.Audio.sfx(i % 2 ? 'honk' : 'horn'), 220 + i * 170);
+        this.fx.burst(this.finish.x + 52, this.GY - 92, 46, { color: ['#ffd23f', '#3fbf6f', '#7a3cc4', '#ffffff', '#e3322b'], speed: 150, grav: 160, life: 1.3 });
+      }
+      if (this.finish && this.finish.gate) this.fx.burst(this.finish.x, this.mode === 'flip' ? (this.GY + this.CY) / 2 : this.GY - 34, 50, { color: ['#7df9ff', '#bfe9ff', '#fff', this.L.palette.accent2], speed: 140, grav: 0, life: .9, glow: true });
       for (let i = 0; i < 4; i++) setTimeout(() => this.fx && this.fx.burst(this.W * (.2 + Math.random() * .6), this.H * (.15 + Math.random() * .25), 40, { color: ['#ffcf4a', '#ff6b3d', '#7df9ff', '#fff', '#ff6bd6'], speed: 160, grav: 120, life: 1.4, glow: true }), i * 260);
     }
     end(won) {
@@ -482,9 +602,9 @@
         if (o.kind === 'coin') continue;
         const b = this.hitbox(o); if (!b) continue;
         const dx = b.x - (p.x + 16);
-        if (dx < -b.w || dx > look) continue;
+        if (dx < -b.w || dx > look + (o.vx || 0) * .2) continue;
         const bottom = b.y + b.h;
-        if (bottom > this.GY - 9 && p.onGround) { this.press(); setTimeout(() => this.release(), 120); }
+        if (bottom > this.GY - 9 && p.onGround) { this.press(); setTimeout(() => this.release(), b.w > 30 ? 220 : 120); }
         else if (bottom > this.GY - 24 && bottom <= this.GY - 9) this.keys.duck = true;
       }
       for (const pit of this.obs.filter(o => o.kind === 'pit')) { const dx = pit.x - (p.x + 14); if (dx > 0 && dx < 18 && p.onGround) this.press(); }
@@ -569,6 +689,8 @@
         const sy = 1 + .12 * p.sq, sx = 1 - .1 * p.sq, foot = img.height / 2;
         ctx.translate(0, foot); ctx.scale(sx, sy); ctx.translate(0, -foot);
       }
+      const big = (this.dino && this.dino.scale) || 1; // a few species draw larger; the hitbox never changes
+      if (big !== 1) { const foot = (flipped ? -1 : 1) * img.height / 2; ctx.translate(0, foot); ctx.scale(big, big); ctx.translate(0, -foot); }
       if (flipped) ctx.scale(1, -1);
       ctx.drawImage(img, -Math.round(img.width / 2), -Math.round(img.height / 2));
       ctx.restore();
@@ -586,10 +708,119 @@
       ctx.restore();
     }
     drawFinish(ctx) {
-      const x = Math.round(this.finish.x), GY = this.GY, top = this.mode === 'flip' ? this.CY : GY - 70;
-      ctx.fillStyle = '#ddd'; ctx.fillRect(x, top, 2, GY - top);
-      for (let r = 0; r < 4; r++) for (let c = 0; c < 6; c++) { ctx.fillStyle = (r + c) % 2 ? '#111' : '#fff'; ctx.fillRect(x + 2 + c * 3, top + r * 3 + Math.sin(this.time * 6 + c) * 1.2, 3, 3); }
-      ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(255,220,120,.12)'; ctx.fillRect(x - 10, top, 22, GY - top); ctx.globalCompositeOperation = 'source-over';
+      const x = Math.round(this.finish.x), flip = this.mode === 'flip', P = this.L.palette, t = this.time;
+      const R = (c, a, b, w, h) => { ctx.fillStyle = c; ctx.fillRect(Math.round(a), Math.round(b), w, h); };
+      const glow = (x0, w, y0, y1, a) => {
+        ctx.globalCompositeOperation = 'lighter';
+        const gr = ctx.createLinearGradient(x0, 0, x0 + w, 0);
+        gr.addColorStop(0, 'rgba(255,220,120,0)'); gr.addColorStop(.5, `rgba(255,220,120,${a})`); gr.addColorStop(1, 'rgba(255,220,120,0)');
+        ctx.fillStyle = gr; ctx.fillRect(x0, y0, w, y1 - y0); ctx.globalCompositeOperation = 'source-over';
+      };
+      if (this.L.finishStyle === 'signal') { this.drawSignalFinish(ctx, x); return; }
+      if (this.finish.gate) {
+        // Boss worlds end at a lab warp gate: steel ring on a plinth, swirling energy inside, sparks drifting up.
+        const base = this.GY, rh = 30, rw = 19, cy = flip ? (this.GY + this.CY) / 2 : base - rh - 4;
+        ctx.globalCompositeOperation = 'lighter';
+        const rg = ctx.createRadialGradient(x, cy, 2, x, cy, rh + 8);
+        rg.addColorStop(0, 'rgba(190,240,255,.45)'); rg.addColorStop(.5, 'rgba(70,140,255,.22)'); rg.addColorStop(1, 'rgba(90,120,255,0)');
+        ctx.fillStyle = rg; ctx.beginPath(); ctx.ellipse(x, cy, rw + 8, rh + 8, 0, 0, Math.PI * 2); ctx.fill();
+        for (let i = 0; i < 90; i++) {
+          const k = i / 90, a = k * Math.PI * 6 + t * 3, r = 1 - k * .85;
+          R(i % 3 ? 'rgba(110,220,255,.55)' : P.accent2, x + Math.cos(a) * rw * .86 * r - 1, cy + Math.sin(a) * rh * .9 * r - 1, 2, 2);
+        }
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.lineWidth = 4; ctx.strokeStyle = '#4a5068'; ctx.beginPath(); ctx.ellipse(x, cy, rw + 2, rh + 2, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.lineWidth = 2; ctx.strokeStyle = '#8f97b3'; ctx.beginPath(); ctx.ellipse(x, cy, rw + 2, rh + 2, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.lineWidth = 1; ctx.strokeStyle = '#dfe5f5'; ctx.beginPath(); ctx.ellipse(x - 1, cy - 1, rw + 2, rh + 2, 0, Math.PI * .7, Math.PI * 1.35); ctx.stroke();
+        for (let i = 0; i < 8; i++) {
+          const a = i / 8 * Math.PI * 2, on = (Math.floor(t * 6) + i) % 4 === 0;
+          R(on ? '#fff6c8' : P.accent, x + Math.cos(a) * (rw + 2) - 1.5, cy + Math.sin(a) * (rh + 2) - 1.5, 3, 3);
+        }
+        if (!flip) { R('#2e2a40', x - 16, base - 4, 32, 4); R('#4a4466', x - 14, base - 5, 28, 2); R(P.accent, x - 14, base - 5, 28, 1); }
+        for (let i = 0; i < 8; i++) R('rgba(160,240,255,.9)', x - 12 + (i * 7) % 24, cy + rh - ((t * 28 + i * 11) % (rh * 2 + 10)), 1, 1);
+        return;
+      }
+      // Grand pennant: gold-capped pole, rippling cloth-shaded checker flag, plinth and a soft light column.
+      const top = flip ? this.CY : this.GY - 76, foot = this.GY;
+      glow(x - 18, 40, flip ? this.CY : 0, foot, .2);
+      R('#7c7c94', x, top, 3, foot - top); R('#dcdcec', x, top, 1, foot - top); R('#45455c', x + 2, top, 1, foot - top);
+      R(P.accent, x - 2, top - 5, 7, 5); R('#fff6c8', x - 1, top - 5, 3, 1); R('rgba(0,0,0,.35)', x - 2, top - 1, 7, 1);
+      const cols = 10, rows = 6, sz = 4, fy = top + 2;
+      for (let c = 0; c < cols; c++) {
+        const ph = t * 6 - c * .7, off = Math.sin(ph) * 3 * (c / cols), lit = Math.sin(ph + 1.2) * .5 + .5;
+        for (let r = 0; r < rows; r++) {
+          const dark = (r + c) % 2, v = dark ? 18 + lit * 26 : 190 + lit * 65;
+          R(`rgb(${v | 0},${v | 0},${(v + (dark ? 12 : 0)) | 0})`, x + 3 + c * sz, fy + r * sz + off, sz, sz);
+        }
+      }
+      if (!flip) { R('#3a3152', x - 6, foot - 6, 15, 6); R(P.accent, x - 6, foot - 6, 15, 1); R('rgba(0,0,0,.35)', x - 6, foot - 1, 15, 1); }
+      for (let i = 0; i < 6; i++) R('rgba(255,240,180,.85)', x - 10 + (i * 7) % 24, foot - ((t * 22 + i * 13) % (foot - top)), 1, 1);
+    }
+
+    // Indiranagar ends at "KFC Signal": the old KFC corner (now Pizza Hut over SNITCH), a signal mast with a countdown
+    // timer and a blue direction board over the road, a traffic cop on his pedestal, and a zebra crossing as the line.
+    drawSignalFinish(ctx, x) {
+      const GY = this.GY, H = this.H, t = this.time, won = this.phase === 'win', txt = DR.pxText, f = this.finish;
+      const R = (c, a, b, w, h) => { ctx.fillStyle = c; ctx.fillRect(Math.round(a), Math.round(b), w, h); };
+      const d = f.x - (this.p.x + 10), light = won || d < 60 ? 2 : d < 140 ? 1 : 0;
+      if (f.light !== undefined && f.light !== light && light === 2 && !won) DR.Audio.sfx('whistle');
+      f.light = light;
+
+      // Zebra crossing across the whole road, skewed for depth, with a stop line before it.
+      for (let y = GY + 2; y < H; y++) {
+        const k = (y - GY) * .18;
+        R('rgba(240,240,232,.85)', x - 10 + k, y, 2, 1);
+        if ((y - GY - 2) % 7 < 4) R('rgba(240,240,232,.9)', x - 2 + k, y, 30, 1);
+      }
+
+      // The corner as it stands today (see cornerArt), just past the board.
+      ctx.drawImage(cornerArt(), x + 84, GY - 16 - CORNER_H);
+
+      // Traffic cop on a striped pedestal under a police umbrella, on the far lane.
+      const cx = x + 22, cb = GY - 9;
+      R('#16141a', cx - 8, cb, 16, 6); for (let i = 0; i < 16; i += 4) R('#e8c23a', cx - 8 + i, cb + 1, 2, 4); R('#f2f2f2', cx - 8, cb, 16, 1);
+      R('#8a8a94', cx + 6, cb - 30, 1, 30);
+      for (let r = 0; r < 4; r++) { const hw = 9 + r * 2; for (let i = -hw; i < hw; i += 2) R(((i + hw) / 2 | 0) % 2 ? '#ffffff' : '#2a5ab8', cx + 6 + i, cb - 33 + r, 2, 1); }
+      for (let i = -15; i < 15; i += 4) R('#2a5ab8', cx + 7 + i, cb - 29, 2, 1);
+      const KH = '#b89a5a', SK = '#9a6a48', WH = '#f6f6f2';
+      R(KH, cx - 2, cb - 5, 2, 5); R(KH, cx + 1, cb - 5, 2, 5); R('#111111', cx - 2, cb - 1, 2, 1); R('#111111', cx + 1, cb - 1, 2, 1);
+      R(WH, cx - 2, cb - 11, 5, 6); R('#5a3a1a', cx - 2, cb - 6, 5, 1);
+      R(SK, cx - 1, cb - 14, 3, 3); R(WH, cx - 2, cb - 15, 5, 1); R(WH, cx - 1, cb - 16, 3, 1); R('#111111', cx - 2, cb - 14, 5, 1);
+      R(WH, cx - 3, cb - 11, 1, 4); R(SK, cx - 3, cb - 7, 1, 1);
+      const wave = Math.sin(t * 12) > 0;
+      if (won) { R(WH, cx + 3, cb - 12, 1, 2); R(WH, cx + 2, cb - 13, 2, 1); R(SK, cx + 2, cb - 15, 1, 2); }          // salute
+      else if (light === 0) { R(WH, cx + 3, cb - 15, 1, 4); R(SK, cx + 3, cb - 17, 2, 2); }                              // STOP palm
+      else if (light === 1 || !wave) { R(WH, cx + 3, cb - 10, 4, 1); R(SK, cx + 7, cb - 10, 1, 1); }                     // hold
+      else { R(WH, cx + 3, cb - 12, 1, 2); R(WH, cx + 4, cb - 14, 2, 2); R(SK, cx + 5, cb - 16, 2, 2); }                  // waving you through
+
+      // Signal mast standing on the kerb, arm out over the road.
+      const mx = x - 4, mt = GY - 108;
+      R('#2a2430', mx - 2, GY - 13, 7, 3); R('#3a3540', mx, mt, 3, GY - 10 - mt); R('#6a6472', mx, mt, 1, GY - 10 - mt);
+      R('#3a3540', mx, mt, 98, 3); R('#6a6472', mx, mt, 98, 1);
+      for (let i = 0; i < 14; i++) R('#3a3540', mx + 3 + i, mt + 3 + i, 2, 1); // brace
+      // Blue direction board.
+      const ox = x + 8, oy = mt + 6, ow = 88;
+      R('#3a3540', ox + 8, mt + 3, 1, 3); R('#3a3540', ox + ow - 9, mt + 3, 1, 3);
+      R('#ffffff', ox - 1, oy - 1, ow + 2, 22); R('#1f4fa0', ox, oy, ow, 20);
+      txt.draw(ctx, 'KFC SIGNAL', ox + (ow - txt.w('KFC SIGNAL', 2)) / 2, oy + 2, '#ffffff', 2);
+      const arrow = (tip, dir) => { // tip pixel, pointing dir (-1 left, 1 right)
+        R('#ffffff', dir < 0 ? tip : tip - 4, oy + 16, 5, 1);
+        for (let k = 1; k <= 2; k++) { R('#ffffff', tip - dir * k, oy + 16 - k, 1, 1); R('#ffffff', tip - dir * k, oy + 16 + k, 1, 1); }
+      };
+      arrow(ox + 2, -1); txt.draw(ctx, 'DOMLUR', ox + 10, oy + 14, '#ffffff');
+      const cw = txt.w('CMH RD'); txt.draw(ctx, 'CMH RD', ox + ow - 10 - cw, oy + 14, '#ffffff'); arrow(ox + ow - 3, 1);
+      // Signal head + countdown timer on the mast (facing us).
+      const hx = mx - 10, hy = GY - 84;
+      R('#000000', hx - 1, hy - 1, 10, 11); R('#16141a', hx, hy, 8, 9);
+      txt.draw(ctx, '88', hx + 1, hy + 2, '#2a0a0a');
+      const n = won ? 'GO' : String(Math.max(0, Math.min(99, Math.ceil(d / 18)))).padStart(2, '0');
+      txt.draw(ctx, n, hx + 1, hy + 2, light === 2 ? '#30ff70' : light === 1 ? '#ffb020' : '#ff3030');
+      R('#000000', hx - 1, hy + 11, 10, 25); R('#1a1a1e', hx, hy + 12, 8, 23);
+      [['#ff3030', '#3a1010'], ['#ffb020', '#3a2a08'], ['#30ff70', '#0a2a12']].forEach(([on, off], i) => {
+        const ly = hy + 14 + i * 7;
+        R('#000000', hx + 1, ly - 1, 6, 1); R(i === light ? on : off, hx + 2, ly, 4, 4);
+        if (i === light) { ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = on + '55'; ctx.beginPath(); ctx.arc(hx + 4, ly + 2, 7, 0, 6.3); ctx.fill(); ctx.globalCompositeOperation = 'source-over'; }
+      });
     }
 
     // ---------- screen-space overlays ----------

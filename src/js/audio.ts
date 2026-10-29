@@ -157,6 +157,10 @@
         case 'laser': tone(sfxBus, t, 1500, .16, { type: 'sawtooth', vol: .10, slide: .22, filter: 2600 }); noise(sfxBus, t, .10, { vol: .07, hp: 3200 }); break;
         case 'wave': noise(sfxBus, t, 1.7, { vol: .36, lp: 420 }); tone(sfxBus, t, 72, 1.5, { type: 'sine', vol: .28, slide: .8 }); break;
         case 'glitch': for (let i = 0; i < 6; i++) tone(sfxBus, t + i * .03, 100 + Math.random() * 1500, .04, { type: 'square', vol: .07 }); break;
+        case 'whistle': tone(sfxBus, t, 2500, .08, { type: 'sine', vol: .09 }); tone(sfxBus, t + .11, 2500, .32, { type: 'sine', vol: .09, slide: 1.04 }); break; // traffic cop
+        case 'bump': noise(sfxBus, t, .12, { vol: .25, lp: 500 }); tone(sfxBus, t, 140, .12, { type: 'square', vol: .1, slide: .6 }); break;
+        case 'horn': [0, .13].forEach(d => tone(sfxBus, t + d, 740, .1, { type: 'square', vol: .07, filter: 2200 })); break; // auto / scooter
+        case 'honk': tone(sfxBus, t, 330, .32, { type: 'sawtooth', vol: .08, filter: 1400 }); tone(sfxBus, t, 415, .32, { type: 'sawtooth', vol: .06, filter: 1400 }); break; // car / lorry
         case 'click': tone(sfxBus, t, 1200, .04, { vol: .08 }); break;
       }
     },

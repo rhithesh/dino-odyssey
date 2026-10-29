@@ -16,6 +16,44 @@ DR.DINOS = [
     unlock: { start: true }, classic: true, stats: {},
   },
   {
+    // Barbie-pink unicorn: gold horn, a flower where an ear would be, a pink-and-violet mane and tail.
+    // Purely cosmetic (stock stats and bars); it throws sparkles whenever it jumps.
+    id: 'unicorn', name: 'UNICORNOSAURUS', short: 'UNICORN', era: 'Dreamhouse Cretaceous',
+    unlock: { start: true }, stats: {}, sparkle: true, scale: 1.3, // drawn larger; the hitbox is the shared one
+    colors: { '#': '#ff9fd0', d: '#e0609f', b: '#ffe2f1', c: '#e0218a', m: '#9b5cff', h: '#ffd23f', H: '#fff3b0', f: '#ffffff', F: '#ffc4e4', P: '#ff3d9a', p: '#ffd23f', g: '#3fa34a', G: '#7cd05a', k: '#ff5fa8', l: '#3a1030', o: '#3a1030', w: '#fff8fc' },
+    lx: 5, ox: 0,
+    body: [
+      '      PP PP       H    ',
+      '      Pf fP      hH    ',
+      '        p       hH     ',
+      '      Pf fP    hH      ',
+      '      PP PPcc##h##     ',
+      '       g mc####l###    ',
+      '      Gg mc####o####   ',
+      '        gmc#########   ',
+      '         mc#####kk     ',
+      '        mc####b        ',
+      '        mc###b         ',
+      'c      mc####b         ',
+      'mc     d######b#       ',
+      'cmc  d#d#####bb #      ',
+      'mcmd#d#d####bb         ',
+      ' c#####d####bb         ',
+      '   #########b          ',
+      '    #######b           ',
+      '     ######            ',
+    ],
+    duck: [
+      '                    P P   hH',
+      '                     p   hH ',
+      'c        mcmcmcmcmcmP#P#h#l  ',
+      'mc   d#d#############o#####',
+      'cmcd#d#d############kk     ',
+      ' ##################b       ',
+      '  #####bbbbbbb##           ',
+    ],
+  },
+  {
     id: 'hypsi', name: 'HYPSILOPHODON', short: 'HYPSI', era: 'Early Cretaceous',
     unlock: { stars: 3 }, stats: { speedMul: 1.05 },
     colors: { '#': '#6dbb4a', d: '#3d7a2a', b: '#d6efa0', c: '#f0c040', o: '#0e1a08', w: '#fff8e0' },
@@ -589,7 +627,7 @@ DR.dinoHint = function (D) {
 // ---------------- power tiers ----------------
 // Later unlocks are stronger: they start with more power bars (see upgrades.js) and their bars cost a bit more.
 DR.DINO_TIER = {
-  compy: 1, hypsi: 1, raptor: 1,
+  compy: 1, unicorn: 1, hypsi: 1, raptor: 1,
   galli: 2, para: 2, dilo: 2, pachy: 2,
   iguano: 3, carno: 3, allo: 3, stego: 3,
   ankylo: 4, trike: 4, spino: 4, ptera: 4, micro: 4,

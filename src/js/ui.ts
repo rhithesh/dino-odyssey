@@ -152,7 +152,10 @@
   function updateHud(s) {
     if (s.hearts !== hudCache.hearts || s.maxHearts !== hudCache.maxHearts) {
       hudCache.maxHearts = s.maxHearts;
-      $('hearts').innerHTML = Array.from({ length: s.maxHearts }, (_, i) => i).map(i => `<span class="h ${i < s.hearts ? '' : 'lost'} text-[#ff3b5c] transition-transform duration-200 [text-shadow:0_0_8px_rgba(255,59,92,.7),0_2px_0_#000] ${i < s.hearts ? '' : 'scale-90 text-white/20 [text-shadow:none]'}">♥</span>`).join('');
+      // Road hazards chip off quarter hearts, so a heart can be partly filled.
+      $('hearts').innerHTML = Array.from({ length: s.maxHearts }, (_, i) => Math.max(0, Math.min(1, s.hearts - i))).map(f => f > 0 && f < 1
+        ? `<span class="h relative inline-block text-white/20 transition-transform duration-200">♥<span class="absolute left-0 top-0 overflow-hidden whitespace-nowrap text-[#ff3b5c] [text-shadow:0_0_8px_rgba(255,59,92,.7)]" style="width:${f * 100}%">♥</span></span>`
+        : `<span class="h ${f ? '' : 'lost'} text-[#ff3b5c] transition-transform duration-200 [text-shadow:0_0_8px_rgba(255,59,92,.7),0_2px_0_#000] ${f ? '' : 'scale-90 text-white/20 [text-shadow:none]'}">♥</span>`).join('');
       hudCache.hearts = s.hearts;
     }
     if (s.score !== hudCache.score) { $('score').textContent = s.score.toLocaleString(); hudCache.score = s.score; }
@@ -204,7 +207,7 @@
     ['blur-[13px]', 'brightness-[.6]', 'saturate-[.85]', 'scale-[1.06]'].forEach(cls => $('game').classList.toggle(cls, listScreen));
   }
   function startDemo() {
-    const pool = LEVELS.filter(L => levelOpen(L) && !L.alwaysOpen && ['run'].includes(L.mode));
+    const pool = LEVELS.filter(L => levelOpen(L) && !L.retro && ['run'].includes(L.mode));
     const L = pool[(Math.random() * pool.length) | 0] || LEVELS[0];
     current = null; document.body.classList.toggle('retro', !!L.retro); document.body.classList.remove('endless');
     game.load(L, { demo: true, dino: save.dino });
