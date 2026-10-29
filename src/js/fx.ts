@@ -96,8 +96,9 @@
         if (p.ring) { ctx.strokeStyle = p.color; ctx.globalAlpha = a; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.3); ctx.stroke(); continue; }
         ctx.globalAlpha = Math.min(1, a * 1.5); ctx.fillStyle = p.color;
         if (p.glow) ctx.globalCompositeOperation = 'lighter';
-        const s = p.size * (p.shape === 'shrink' ? a : 1);
-        ctx.fillRect(p.x - s / 2, p.y - s / 2, s, s);
+        const s = p.size * (p.shape === 'shrink' || p.shape === 'star' ? a : 1);
+        if (p.shape === 'star') { ctx.fillRect(p.x - s, p.y - .5, s * 2, 1); ctx.fillRect(p.x - .5, p.y - s, 1, s * 2); } // four-point twinkle
+        else ctx.fillRect(p.x - s / 2, p.y - s / 2, s, s);
         ctx.globalCompositeOperation = 'source-over';
       }
       ctx.globalAlpha = 1;

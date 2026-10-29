@@ -182,9 +182,16 @@
         DR.Audio.sfx('jump');
         this.fx.ring(p.x + 10, p.y - 2, this.L.palette.accent, 18, .3);
         this.fx.burst(p.x + 10, p.y - 2, 8, { color: [this.L.palette.accent, '#fff'], speed: 80, angle: Math.PI / 2, spread: 1.6, life: .3, grav: 0, size: 1.5, glow: true });
+        this.sparkle(12);
         return;
       }
       p.buf = this.st.buffer;
+    }
+    // Sparkle species (the unicorn): a burst of pink, gold and white twinkles. Cosmetic only.
+    sparkle(n) {
+      if (!this.dino || !this.dino.sparkle) return;
+      const p = this.p;
+      this.fx.burst(p.x + 10, p.y - 8 * p.g, n, { color: ['#ff9fd0', '#ffd23f', '#ffffff', '#c89bff', '#e0218a'], speed: 95, grav: 60, drag: .94, life: .7, size: 2.5, glow: true, shape: 'star' });
     }
     // Dash: a short, fast burst that phases through hazards. Cooldown depends on the shop level.
     dash() {
@@ -215,6 +222,7 @@
       } else {
         p.vy = -this.jump().v0; p.jt = 0; p.y0 = p.y; p.cut = false; p.sq = 1; p.onGround = false; DR.Audio.sfx('jump');
         this.fx.burst(p.x + 8, p.floor || this.GY, 6, { color: this.L.palette.groundDark, speed: 60, angle: -Math.PI / 2, spread: 2, life: .35, grav: 400 });
+        this.sparkle(16);
       }
     }
 
@@ -336,6 +344,8 @@
       const n = Math.max(1, Math.ceil(dt * 240)), h = dt / n;
       for (let i = 0; i < n; i++) this.stepPlayer(h);
       this.p.sq *= Math.max(0, 1 - dt * 9);
+      if (this.dino && this.dino.sparkle && !this.p.onGround && this.mode !== 'swim' && Math.random() < dt * 22) // glitter trail while airborne
+        this.fx.burst(this.p.x + 4, this.p.y - 6 * this.p.g, 1, { color: ['#ff9fd0', '#ffd23f', '#ffffff'], speed: 18, grav: 20, life: .5, size: 2, glow: true, shape: 'star' });
     }
     stepPlayer(dt) {
       const p = this.p, GY = this.GY;
@@ -679,6 +689,8 @@
         const sy = 1 + .12 * p.sq, sx = 1 - .1 * p.sq, foot = img.height / 2;
         ctx.translate(0, foot); ctx.scale(sx, sy); ctx.translate(0, -foot);
       }
+      const big = (this.dino && this.dino.scale) || 1; // a few species draw larger; the hitbox never changes
+      if (big !== 1) { const foot = (flipped ? -1 : 1) * img.height / 2; ctx.translate(0, foot); ctx.scale(big, big); ctx.translate(0, -foot); }
       if (flipped) ctx.scale(1, -1);
       ctx.drawImage(img, -Math.round(img.width / 2), -Math.round(img.height / 2));
       ctx.restore();
