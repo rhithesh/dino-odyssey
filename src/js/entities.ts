@@ -360,7 +360,7 @@
         b.gone = true; this.fx.doFlash(1, '#fff'); this.shake = 16; DR.Audio.sfx('boom');
         this.fx.burst(b.x, b.y, 90, { color: ['#fff', '#ffd000', '#ff4a00', '#7df9ff'], speed: 280, life: 1.2, glow: true, size: 3 });
         this.fx.ring(b.x, b.y, '#fff', 120, .6);
-        this.win();
+        this.finish = { x: this.W + 40, gate: true }; // the dino runs on into the warp gate to clear the world
       }
       return;
     }

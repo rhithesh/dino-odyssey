@@ -185,7 +185,9 @@
           break;
         }
         case 'bossIntro': this.bossIntroUpdate(dt); break;
-        case 'boss': this.runTime += dt; this.score += this.speed * dt / 10 * this.mult(); this.bossUpdate(dt); break;
+        case 'boss': this.runTime += dt; this.score += this.speed * dt / 10 * this.mult(); this.bossUpdate(dt);
+          if (this.finish) { this.finish.x -= this.speed * dt; if (this.finish.x < p.x + 10) this.win(); }
+          break;
         case 'win': {
           this.zoom = lerp(this.zoom, 1.12, dt * 2);
           if (this.phaseT > .7) p.x += (60 + this.phaseT * 160) * dt;
@@ -353,6 +355,7 @@
       this.setPhase('win'); this.slow = .5;
       DR.Audio.stopMusic(.6); DR.Audio.sfx('win');
       this.fx.doFlash(.6, '#fff');
+      if (this.finish && this.finish.gate) this.fx.burst(this.finish.x, this.mode === 'flip' ? (this.GY + this.CY) / 2 : this.GY - 34, 50, { color: ['#7df9ff', '#bfe9ff', '#fff', this.L.palette.accent2], speed: 140, grav: 0, life: .9, glow: true });
       for (let i = 0; i < 4; i++) setTimeout(() => this.fx && this.fx.burst(this.W * (.2 + Math.random() * .6), this.H * (.15 + Math.random() * .25), 40, { color: ['#ffcf4a', '#ff6b3d', '#7df9ff', '#fff', '#ff6bd6'], speed: 160, grav: 120, life: 1.4, glow: true }), i * 260);
     }
     end(won) {
@@ -586,10 +589,52 @@
       ctx.restore();
     }
     drawFinish(ctx) {
-      const x = Math.round(this.finish.x), GY = this.GY, top = this.mode === 'flip' ? this.CY : GY - 70;
-      ctx.fillStyle = '#ddd'; ctx.fillRect(x, top, 2, GY - top);
-      for (let r = 0; r < 4; r++) for (let c = 0; c < 6; c++) { ctx.fillStyle = (r + c) % 2 ? '#111' : '#fff'; ctx.fillRect(x + 2 + c * 3, top + r * 3 + Math.sin(this.time * 6 + c) * 1.2, 3, 3); }
-      ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(255,220,120,.12)'; ctx.fillRect(x - 10, top, 22, GY - top); ctx.globalCompositeOperation = 'source-over';
+      const x = Math.round(this.finish.x), flip = this.mode === 'flip', P = this.L.palette, t = this.time;
+      const R = (c, a, b, w, h) => { ctx.fillStyle = c; ctx.fillRect(Math.round(a), Math.round(b), w, h); };
+      const glow = (x0, w, y0, y1, a) => {
+        ctx.globalCompositeOperation = 'lighter';
+        const gr = ctx.createLinearGradient(x0, 0, x0 + w, 0);
+        gr.addColorStop(0, 'rgba(255,220,120,0)'); gr.addColorStop(.5, `rgba(255,220,120,${a})`); gr.addColorStop(1, 'rgba(255,220,120,0)');
+        ctx.fillStyle = gr; ctx.fillRect(x0, y0, w, y1 - y0); ctx.globalCompositeOperation = 'source-over';
+      };
+      if (this.finish.gate) {
+        // Boss worlds end at a lab warp gate: steel ring on a plinth, swirling energy inside, sparks drifting up.
+        const base = this.GY, rh = 30, rw = 19, cy = flip ? (this.GY + this.CY) / 2 : base - rh - 4;
+        ctx.globalCompositeOperation = 'lighter';
+        const rg = ctx.createRadialGradient(x, cy, 2, x, cy, rh + 8);
+        rg.addColorStop(0, 'rgba(190,240,255,.45)'); rg.addColorStop(.5, 'rgba(70,140,255,.22)'); rg.addColorStop(1, 'rgba(90,120,255,0)');
+        ctx.fillStyle = rg; ctx.beginPath(); ctx.ellipse(x, cy, rw + 8, rh + 8, 0, 0, Math.PI * 2); ctx.fill();
+        for (let i = 0; i < 90; i++) {
+          const k = i / 90, a = k * Math.PI * 6 + t * 3, r = 1 - k * .85;
+          R(i % 3 ? 'rgba(110,220,255,.55)' : P.accent2, x + Math.cos(a) * rw * .86 * r - 1, cy + Math.sin(a) * rh * .9 * r - 1, 2, 2);
+        }
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.lineWidth = 4; ctx.strokeStyle = '#4a5068'; ctx.beginPath(); ctx.ellipse(x, cy, rw + 2, rh + 2, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.lineWidth = 2; ctx.strokeStyle = '#8f97b3'; ctx.beginPath(); ctx.ellipse(x, cy, rw + 2, rh + 2, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.lineWidth = 1; ctx.strokeStyle = '#dfe5f5'; ctx.beginPath(); ctx.ellipse(x - 1, cy - 1, rw + 2, rh + 2, 0, Math.PI * .7, Math.PI * 1.35); ctx.stroke();
+        for (let i = 0; i < 8; i++) {
+          const a = i / 8 * Math.PI * 2, on = (Math.floor(t * 6) + i) % 4 === 0;
+          R(on ? '#fff6c8' : P.accent, x + Math.cos(a) * (rw + 2) - 1.5, cy + Math.sin(a) * (rh + 2) - 1.5, 3, 3);
+        }
+        if (!flip) { R('#2e2a40', x - 16, base - 4, 32, 4); R('#4a4466', x - 14, base - 5, 28, 2); R(P.accent, x - 14, base - 5, 28, 1); }
+        for (let i = 0; i < 8; i++) R('rgba(160,240,255,.9)', x - 12 + (i * 7) % 24, cy + rh - ((t * 28 + i * 11) % (rh * 2 + 10)), 1, 1);
+        return;
+      }
+      // Grand pennant: gold-capped pole, rippling cloth-shaded checker flag, plinth and a soft light column.
+      const top = flip ? this.CY : this.GY - 76, foot = this.GY;
+      glow(x - 18, 40, flip ? this.CY : 0, foot, .2);
+      R('#7c7c94', x, top, 3, foot - top); R('#dcdcec', x, top, 1, foot - top); R('#45455c', x + 2, top, 1, foot - top);
+      R(P.accent, x - 2, top - 5, 7, 5); R('#fff6c8', x - 1, top - 5, 3, 1); R('rgba(0,0,0,.35)', x - 2, top - 1, 7, 1);
+      const cols = 10, rows = 6, sz = 4, fy = top + 2;
+      for (let c = 0; c < cols; c++) {
+        const ph = t * 6 - c * .7, off = Math.sin(ph) * 3 * (c / cols), lit = Math.sin(ph + 1.2) * .5 + .5;
+        for (let r = 0; r < rows; r++) {
+          const dark = (r + c) % 2, v = dark ? 18 + lit * 26 : 190 + lit * 65;
+          R(`rgb(${v | 0},${v | 0},${(v + (dark ? 12 : 0)) | 0})`, x + 3 + c * sz, fy + r * sz + off, sz, sz);
+        }
+      }
+      if (!flip) { R('#3a3152', x - 6, foot - 6, 15, 6); R(P.accent, x - 6, foot - 6, 15, 1); R('rgba(0,0,0,.35)', x - 6, foot - 1, 15, 1); }
+      for (let i = 0; i < 6; i++) R('rgba(255,240,180,.85)', x - 10 + (i * 7) % 24, foot - ((t * 22 + i * 13) % (foot - top)), 1, 1);
     }
 
     // ---------- screen-space overlays ----------
