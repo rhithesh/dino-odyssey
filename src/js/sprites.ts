@@ -215,11 +215,101 @@ window.DR = window.DR || {};
       ['   ####   ', '  ######  ', ' ##oooo## ', '###oooo###', ' ##oooo## ', '  ######  ', '   ####   ', '    ++    '],
       ['   ####   ', '  #oooo#  ', ' ##oooo## ', '###oooo###', ' ##oooo## ', '  #oooo#  ', '   ####   ', '    ++    '],
     ],
+    // Black kite over Bengaluru: forked tail, yellow beak.
+    kite: [
+      [' ##      ##    ', '  ##    ##     ', '   ##  ##      ', 'o######### ##  ', ' ##########    ', '        ## ##  '],
+      ['               ', 'o######### ##  ', ' ##########    ', '   ##  ## ##   ', '  ##    ##     ', ' ##      ##    '],
+    ],
     // Shore gull, wings up / wings down.
     gull: [
       ['#          #', '##  ####  ##', ' #####oo#####', '   ######   ', '     ##     '],
       ['            ', '   ######   ', ' #####oo#####', '##  ####  ##', '#          #'],
     ],
+  };
+
+  // ---------------- Traffic (Indiranagar) ----------------
+  // Side-view vehicles facing left (oncoming). Two frames each: the wheel hubs turn.
+  const VEH = {
+    auto: [{ body: '#2f9a4a', canopy: '#f4cf2a' }, { body: '#26262a', canopy: '#f4cf2a' }, { body: '#f1f1ef', canopy: '#f1f1ef', dot: '#e3322b' }],
+    bike: [{ box: '#6a2bd0', helmet: '#6a2bd0' }, { box: '#f4d21f', helmet: '#2a2a2a' }, { box: '#f26b1d', helmet: '#f26b1d' }, { box: null, helmet: '#f4d21f' }],
+    car: [{ body: '#eef0f2' }, { body: '#c8352e' }, { body: '#a9b0b8' }, { body: '#3a62b8' }],
+    truck: [{ cab: '#f2c230', cargo: '#e0661a', tarp: '#2f5aa0' }, { cab: '#2f7ad0', cargo: '#3f9a4a', tarp: '#c8352e' }],
+  };
+  const shadeC = (h, k) => { const n = parseInt(h.slice(1), 16), f = v => Math.max(0, Math.min(255, Math.round(v * k))).toString(16).padStart(2, '0'); return '#' + f(n >> 16 & 255) + f(n >> 8 & 255) + f(n & 255); };
+  function genVehicle(sub, v, frame) {
+    const size = { auto: [26, 19], bike: [20, 18], car: [36, 14], truck: [58, 27] }[sub];
+    const c = mk(size[0], size[1]), g = c.getContext('2d');
+    const F = (col, x, y, w, h) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+    const wheel = (cx, top, r) => { // r: 2 (5px) or 3 (7px) tyres
+      const d = r * 2 + 1;
+      F('#18181c', cx - r, top + 1, d, d - 2); F('#18181c', cx - r + 1, top, d - 2, d);
+      F('#8a8a94', cx, top + r, 1, 1); F('#c8c8d0', cx + (frame ? 1 : -1), top + r + (frame ? -1 : 1), 1, 1);
+    };
+    const HL = '#fff3a0', GL = '#bfe2f2', SKIN = '#9a6a48';
+    if (sub === 'auto') {
+      const cn = v.canopy, cnD = shadeC(cn, .78), b = v.body, bD = shadeC(b, .72);
+      F(cn, 4, 0, 19, 2); F(cn, 3, 1, 1, 1); F(cnD, 4, 2, 17, 1); // canopy roof
+      F(cn, 20, 1, 5, 9); F(cnD, 24, 2, 1, 8);                    // rear canopy panel
+      F('#2a2228', 5, 3, 15, 7);                                  // open cabin
+      F('#18181c', 3, 2, 1, 8); F(GL, 1, 4, 2, 4); F('#18181c', 1, 3, 2, 1); // windscreen + pillar
+      F(SKIN, 7, 3, 2, 2); F('#1a1418', 7, 3, 2, 1); F('#c8b07a', 6, 5, 4, 4); // driver in khaki
+      F('#4a3a3a', 13, 6, 6, 3);                                  // passenger bench
+      F(b, 1, 10, 24, 5); F(shadeC(b, 1.15), 2, 10, 22, 1); F(bD, 1, 14, 24, 1);
+      F(b, 0, 8, 3, 6); F(HL, 0, 9, 2, 2);                        // front cowl + headlamp
+      F('#18181c', 0, 14, 3, 1);
+      F(bD, 1, 15, 7, 1); F(bD, 17, 15, 7, 1);                    // mudguards
+      if (v.dot) F(v.dot, 21, 5, 2, 2);
+      wheel(4, 14, 2); wheel(20, 14, 2);
+    } else if (sub === 'bike') {
+      const body = v.box ? '#d8d8dc' : '#2a2a30', jersey = v.box ? shadeC(v.box, .7) : '#3a5a8a';
+      F(body, 2, 10, 5, 4); F(body, 7, 11, 10, 3); F(body, 11, 9, 7, 3); F(shadeC(body, .75), 7, 13, 10, 1); // scooter
+      F('#18181c', 3, 6, 1, 4); F('#18181c', 2, 6, 3, 1); F(HL, 1, 9, 2, 2);                                   // handlebar, lamp
+      F('#2a3550', 6, 9, 5, 2);                                                                               // jeans
+      F(jersey, 7, 4, 4, 6); F(jersey, 4, 6, 4, 1); F(SKIN, 3, 6, 1, 1);                                      // rider
+      F(v.helmet, 7, 1, 4, 3); F('#1a1a2a', 7, 2, 1, 1);                                                      // helmet + visor
+      if (v.box) { F(v.box, 13, 1, 6, 8); F(shadeC(v.box, .7), 18, 1, 1, 8); F(shadeC(v.box, 1.2), 13, 1, 6, 1); F('#ffffff', 15, 4, 2, 2); }
+      else { F('#e8e4d8', 12, 4, 4, 5); F(SKIN, 12, 2, 3, 2); F('#1a1418', 12, 1, 3, 1); F('#2a3550', 12, 9, 4, 2); } // bike-taxi pillion
+      wheel(3, 13, 2); wheel(15, 13, 2);
+    } else if (sub === 'car') {
+      const b = v.body, bD = shadeC(b, .75), bL = shadeC(b, 1.1);
+      F(b, 9, 0, 17, 1); F(b, 8, 1, 20, 4); F(b, 7, 3, 2, 2);     // cabin
+      F(GL, 9, 1, 7, 3); F(GL, 18, 1, 7, 3); F(GL, 7, 3, 2, 1); F(shadeC(GL, .8), 16, 1, 2, 3); // glass + B-pillar
+      F('#2a2a30', 12, 2, 2, 2);                                  // driver
+      F(b, 1, 5, 34, 5); F(bL, 2, 5, 32, 1); F(bD, 1, 9, 34, 1);  // body
+      F(bD, 17, 5, 1, 4); F(bD, 11, 6, 2, 1); F(bD, 21, 6, 2, 1); // door seam + handles
+      F(HL, 0, 5, 2, 2); F('#2a2a30', 0, 8, 2, 2); F('#d02a2a', 34, 5, 2, 2); F('#2a2a30', 34, 8, 2, 2);
+      F('#f2c230', 0, 7, 1, 1);                                   // yellow plate edge: it's a cab
+      wheel(8, 9, 2); wheel(28, 9, 2);
+    } else {
+      const cab = v.cab, cargo = v.cargo, cD = shadeC(cargo, .72);
+      F(v.tarp, 17, 0, 41, 3); F(shadeC(v.tarp, 1.2), 17, 0, 41, 1);
+      F(cargo, 17, 3, 41, 16); for (let x = 20; x < 56; x += 4) F(cD, x, 3, 1, 16);
+      F('#f4d21f', 17, 8, 41, 1); F('#d02a2a', 17, 13, 41, 1);
+      for (let x = 22; x < 54; x += 8) { F('#f4d21f', x, 10, 2, 2); F('#ffffff', x + 4, 15, 1, 1); } // painted flowers
+      F(shadeC(cargo, .6), 55, 3, 3, 16);
+      F(shadeC(cab, .8), 2, 1, 14, 2); F('#d02a2a', 3, 1, 2, 1); F('#2a8a3a', 9, 1, 2, 1); // painted crown over the cab
+      F(cab, 1, 3, 15, 16); F(shadeC(cab, 1.15), 1, 3, 15, 1); F(shadeC(cab, .75), 15, 3, 1, 16);
+      F(GL, 2, 5, 9, 5); F('#2a2a30', 6, 6, 2, 2); F('#c8b07a', 5, 8, 4, 2);
+      F('#2a2a30', 0, 11, 2, 8); F(HL, 0, 12, 2, 2);
+      F('#2a2a30', 0, 19, 58, 2);
+      F('#111111', 56, 21, 1, 3); F('#c8e04a', 1, 21, 1, 1); F('#2a8a2a', 1, 22, 1, 2); // tassel, lemon-chilli
+      wheel(7, 20, 3); wheel(32, 20, 3); wheel(48, 20, 3);
+    }
+    return c;
+  }
+  // 1px dark outline so vehicles read against busy shopfronts.
+  const outline = (img, col) => {
+    const sil = mk(img.width, img.height), sg = sil.getContext('2d');
+    sg.drawImage(img, 0, 0); sg.globalCompositeOperation = 'source-in'; sg.fillStyle = col; sg.fillRect(0, 0, img.width, img.height);
+    const c = mk(img.width + 2, img.height + 2), g = c.getContext('2d');
+    for (const [dx, dy] of [[0, 1], [2, 1], [1, 0], [1, 2]]) g.drawImage(sil, dx, dy);
+    g.drawImage(img, 1, 1);
+    return c;
+  };
+  const genTraffic = () => {
+    const out = {};
+    for (const sub in VEH) out[sub] = VEH[sub].map(v => [0, 1].map(f => outline(genVehicle(sub, v, f), '#141018')));
+    return out;
   };
 
   // ---------------- Ground obstacle generators ----------------
@@ -405,6 +495,7 @@ window.DR = window.DR || {};
         coin: coinFrames(),
         heart: HEART,
         boss: L.boss ? genBoss(L.boss.kind, P) : null,
+        traffic: L.traffic ? genTraffic() : null,
       };
       return (cache[L.id] = s);
     },

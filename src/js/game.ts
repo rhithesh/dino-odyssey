@@ -11,6 +11,7 @@
   // Jump feel (see Game.jump): hop = HOP x full height; a press held for HOLD_WIN s commits to the full jump;
   // falling uses FALL x the rise gravity.
   const HOP = .6, HOLD_WIN = .1, FALL = 1.45;
+  const CHIP = { pothole: .25, hump: .25 }; // damage sources that cost a fraction of a heart
   DR.JUMP = { HOP, HOLD_WIN, FALL };
 
   class Game {
@@ -289,11 +290,11 @@
         if (p.y > GY + 8 && this.perks.lava > 0 && p.inv <= 0 && !this.demo) { this.perks.lava--; p.vy = -720; p.y = GY + 8; this.perkFx('HOT HOP!', '#ff8a00'); }
         else if (p.y > GY + 8) { this.damage('lava'); p.vy = -720; p.y = GY + 8; this.fx.burst(p.x + 10, GY, 18, { color: ['#ff4a00', '#ffd000', '#ff8a00'], speed: 160, life: .6, glow: true }); }
       } else p.onGround = false;
-      // Tidal Shore: raised shelves are standable — land on top, ride it, drop off the end.
-      if (this.L.tide && p.vy >= 0 && !p.onGround) {
+      // Tidal Shore shelves and Indiranagar lorries are standable — land on top, ride it, drop off the end.
+      if ((this.L.tide || this.L.traffic) && p.vy >= 0 && !p.onGround) {
         const px = p.x + 10;
         for (const o of this.obs) {
-          if (o.kind !== 'plat' || px < o.x + 1 || px > o.x + o.w - 1) continue;
+          if (!(o.kind === 'plat' || o.roof) || px < o.x + 1 || px > o.x + o.w - 1) continue;
           if (prevY <= o.y + 2 && p.y >= o.y) {
             p.y = o.y; p.vy = 0; p.onGround = true; p.floor = o.y;
             if (!was) { p.sq = -1; this.land(); }
@@ -326,7 +327,7 @@
     }
 
     damage(src) {
-      const p = this.p;
+      const p = this.p, chip = CHIP[src]; // road hazards only chip off part of a heart
       if (p.inv > 0 || p.dead || this.demo || this.phase === 'win' || this.phase === 'intro') return false;
       if (this.shieldN > 0) {
         this.shieldN--; this.shieldHit = true; p.inv = .8;
@@ -335,12 +336,20 @@
         this.shake = Math.max(this.shake, 3); DR.Audio.sfx('close');
         return false;
       }
-      this.hearts--; this.hits++; this.streak = 0; p.inv = this.st.inv;
-      this.hitstop = .09; this.shake = 9; this.penalty = .8;
-      this.fx.doFlash(.45, '#ff2040');
-      this.fx.burst(p.x + 10, p.y - 10 * p.g, 16, { color: [this.L.palette.dino, '#fff', '#ff3b5c'], speed: 160, life: .6 });
-      DR.Audio.sfx('hit');
-      this.hooks.hurt && this.hooks.hurt(this.hearts);
+      this.hits++; this.streak = 0;
+      if (chip) {
+        this.hearts = Math.max(0, this.hearts - chip); p.inv = Math.min(.35, this.st.inv);
+        this.hitstop = .03; this.shake = 4; this.penalty = .9;
+        this.fx.text(p.x + 10, p.y - 30 * p.g, '-¼♥', '#ff8a9a', 8);
+        DR.Audio.sfx('bump');
+      } else {
+        this.hearts = Math.max(0, this.hearts - 1); p.inv = this.st.inv;
+        this.hitstop = .09; this.shake = 9; this.penalty = .8;
+        this.fx.doFlash(.45, '#ff2040');
+        this.fx.burst(p.x + 10, p.y - 10 * p.g, 16, { color: [this.L.palette.dino, '#fff', '#ff3b5c'], speed: 160, life: .6 });
+        DR.Audio.sfx('hit');
+      }
+      this.hooks.hurt && this.hooks.hurt(Math.floor(this.hearts));
       if (this.hearts <= 0) this.die();
       return true;
     }
@@ -485,9 +494,9 @@
         if (o.kind === 'coin') continue;
         const b = this.hitbox(o); if (!b) continue;
         const dx = b.x - (p.x + 16);
-        if (dx < -b.w || dx > look) continue;
+        if (dx < -b.w || dx > look + (o.vx || 0) * .2) continue;
         const bottom = b.y + b.h;
-        if (bottom > this.GY - 9 && p.onGround) { this.press(); setTimeout(() => this.release(), 120); }
+        if (bottom > this.GY - 9 && p.onGround) { this.press(); setTimeout(() => this.release(), b.w > 30 ? 220 : 120); }
         else if (bottom > this.GY - 24 && bottom <= this.GY - 9) this.keys.duck = true;
       }
       for (const pit of this.obs.filter(o => o.kind === 'pit')) { const dx = pit.x - (p.x + 14); if (dx > 0 && dx < 18 && p.onGround) this.press(); }

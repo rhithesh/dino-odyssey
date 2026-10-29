@@ -22,6 +22,8 @@
   G.spawnRun = function (d) {
     const L = this.L, x = this.W + 20, r = R();
     if (L.lasers && d > .12 && r < .34) { this.addLaser(x); return; }
+    if (L.roadHazards && R() < .2) { this.addRoadHazard(x); return; }
+    if (L.traffic && R() < .62) { this.addVehicle(x, d); return; }
     if (this.fallersOn && !this.demo && r < .24) {
       const n = d > .5 && R() < .5 ? 2 : 1;
       for (let i = 0; i < n; i++) this.addFaller(150 + i * 70 + R() * 50, L.fallers === 'icicle' ? 'icicle' : 'meteor');
@@ -98,6 +100,47 @@
     if (L.ghostPhase) { o.phase = true; o.alpha = 1; o.glow = 18; }
     this.obs.push(o);
   };
+  // Indiranagar traffic: oncoming vehicles drive faster than the scroll and honk as they spawn.
+  // Lorries drive our way at TRUCK_PACE x run speed, so the dino catches them from behind and can ride the roof.
+  // hl = headlamp height in the sprite.
+  const VEH_CFG = {
+    bike: { vx: [70, 105], hl: 10, horn: 'horn' },
+    auto: { vx: [30, 55], hl: 10, horn: 'horn' },
+    car: { vx: [50, 85], hl: 6, horn: 'honk' },
+    truck: { vx: [0, 0], hl: 13, horn: 'honk' },
+  };
+  const TRUCK_PACE = .55;
+  G.addVehicle = function (x, d) {
+    const r = R(), sub = d > .15 && r < .14 ? 'truck' : r < .45 ? 'bike' : r < .75 ? 'auto' : 'car';
+    const set = this.S.traffic[sub], cfg = VEH_CFG[sub];
+    const vi = sub === 'auto' ? (R() < .06 ? 2 : R() < .7 ? 0 : 1) : (R() * set.length | 0); // auto #2 is the rare white one
+    const push = (ox, frames) => {
+      const img = frames[0], vx = lerp(cfg.vx[0], cfg.vx[1], R());
+      this.obs.push({ kind: 'vehicle', sub, frames, x: ox, y: this.GY - img.height, w: img.width, h: img.height, t: R() * 3, vx, vx0: vx, hl: cfg.hl, roof: sub === 'truck' });
+    };
+    if (sub === 'truck') {
+      push(x, set[vi]);
+      const o = this.obs[this.obs.length - 1]; o.same = true; o.vx = -this.speed * TRUCK_PACE;
+      // Keep the lane clear until the lorry has passed under the dino: a calm stretch to ride it.
+      this.nextSpawn = Math.max(this.nextSpawn, (this.W + o.w - this.p.x) / (1 - TRUCK_PACE));
+      if (!this.demo) DR.Audio.sfx(cfg.horn);
+      return;
+    }
+    push(x + 70, set[vi]);
+    if (sub === 'bike' && d > .4 && R() < .4) push(x + 104, set[R() * set.length | 0]); // delivery riders travel in pairs
+    if (!this.demo) DR.Audio.sfx(cfg.horn);
+  };
+  // Potholes (rain-filled) and painted speed humps: flush with the road, cost a quarter heart if you run over them.
+  G.addRoadHazard = function (x) {
+    const pot = R() < .6, w = pot ? 16 + (R() * 10 | 0) : 24;
+    this.obs.push({ kind: pot ? 'pothole' : 'hump', x, y: this.GY - (pot ? 2 : 4), w, h: pot ? 2 : 4, t: 0 });
+    if (R() < .5) this.addCoinArc(x + w / 2, 'hop', 3);
+  };
+  G.roadHit = function (o) {
+    const p = this.p, GY = this.GY;
+    if (o.kind === 'pothole') this.fx.burst(p.x + 10, GY - 1, 14, { color: ['#7fa8c8', '#cfe6f5', '#3d3a42'], speed: 110, angle: -Math.PI / 2, spread: 1.6, grav: 400, life: .45, size: 1.5 });
+    else { p.vy = -170; p.onGround = false; this.fx.burst(p.x + 10, GY - 2, 6, { color: ['#e8c23a', '#16141a'], speed: 60, angle: -Math.PI / 2, spread: 2, life: .3 }); } // the hump bounces you
+  };
   // Laser fence: a floating beam segment that charges, fires, then shuts off.
   G.addLaser = function (x) {
     // Alternate low/high so the vault reads as a beat: jump, duck, jump, duck.
@@ -167,6 +210,9 @@
       case 'mine': return { x: o.x - 5, y: o.y - 5, w: 10, h: 10 };
       case 'proj': return { x: o.x - o.r + 1, y: o.y - o.r + 1, w: o.r * 2 - 2, h: o.r * 2 - 2 };
       case 'shock': return { x: o.x, y: this.GY - o.h, w: o.w, h: o.h };
+      case 'vehicle': return { x: o.x + 2, y: o.y + 3, w: o.w - 4, h: o.h - 3 }; // roof stays clear so lorries are rideable
+      case 'pothole': return { x: o.x + 3, y: this.GY - 2, w: o.w - 6, h: 3 }; // only feet on the road touch these
+      case 'hump': return { x: o.x + 2, y: this.GY - 4, w: o.w - 4, h: 4 };
       case 'laser': return o.on ? { x: o.x + 1, y: o.y + 1, w: o.w - 2, h: o.h - 2 } : null;
       case 'plat': return null; // the top surface is handled by player physics
       default: return null;
@@ -196,6 +242,10 @@
           if (o.phase) o.alpha = .5 + .5 * Math.sin(o.t * 2.4 + o.ph);
           break;
         case 'mine': o.y = o.by + Math.sin(o.t * 2) * 4; break;
+        case 'vehicle': // autos surge and brake; lorries hold their pace relative to the run
+          if (o.sub === 'auto') o.vx = o.vx0 + Math.sin(o.t * 1.7) * 18;
+          if (o.same) o.vx = -this.speed * TRUCK_PACE;
+          break;
         case 'laser': {
           const ph = ((o.t % o.period) + o.period) % o.period;
           o.wasOn = o.on;
@@ -238,7 +288,7 @@
           this.perks.breaker--; this.perkFx('SMASH!', '#e06030');
           this.fx.burst(o.x + o.w / 2, o.y + o.h / 2, 24, { color: [this.L.palette.obstacle, '#fff'], speed: 180, life: .7, size: 2 });
           this.obs.splice(i, 1); continue;
-        } else if (this.damage(o.kind)) { o.hit = true; if (o.kind === 'proj' || o.kind === 'faller') o.x = -999; }
+        } else if (this.damage(o.kind)) { o.hit = true; if (o.kind === 'proj' || o.kind === 'faller') o.x = -999; if (o.kind === 'pothole' || o.kind === 'hump') this.roadHit(o); }
         else { o.grazed = true; if (this.shieldHit) { o.hit = true; this.shieldHit = false; } } // overlapped while invincible: no free combo
       } else if (hb && !o.passed) {
         if (hb.x < pb.x + pb.w + 4 && hb.x + hb.w > pb.x - 4) {
@@ -427,6 +477,40 @@
             ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(255,120,0,.35)'; ctx.beginPath(); ctx.arc(x, y, 9, 0, 6.3); ctx.fill(); ctx.globalCompositeOperation = 'source-over';
             ctx.fillStyle = '#4a2c26'; ctx.fillRect(x - 5, y - 5, 10, 10); ctx.fillStyle = '#ff6a00'; ctx.fillRect(x - 3, y - 3, 3, 3); ctx.fillStyle = '#ffd000'; ctx.fillRect(x - 1, y - 6, 2, 2);
           }
+          break;
+        }
+        case 'pothole': { // heaved, broken rim, dark crater, rainwater with a moving glint, cracks
+          ctx.fillStyle = '#16141a'; ctx.fillRect(x - 2, GY, o.w + 4, 6); ctx.fillRect(x + 1, GY + 6, o.w - 2, 2);
+          ctx.fillStyle = '#4f7ca0'; ctx.fillRect(x + 1, GY + 2, o.w - 2, 4);
+          ctx.fillStyle = 'rgba(207,230,245,.9)'; ctx.fillRect(x + 2 + ((t * 8 | 0) % Math.max(1, o.w - 6)), GY + 3, 3, 1);
+          ctx.fillStyle = '#6a6670';
+          ctx.fillRect(x - 4, GY - 1, 5, 1); ctx.fillRect(x - 3, GY - 2, 3, 1); ctx.fillRect(x + o.w - 1, GY - 1, 5, 1); ctx.fillRect(x + o.w, GY - 2, 3, 1);
+          ctx.fillRect(x + (o.w >> 1) - 1, GY - 1, 3, 1);
+          ctx.fillStyle = '#16141a'; ctx.fillRect(x - 7, GY + 1, 4, 1); ctx.fillRect(x - 9, GY + 2, 3, 1); ctx.fillRect(x + o.w + 3, GY + 2, 5, 1);
+          break;
+        }
+        case 'hump': { // speed breaker painted in black and yellow bands
+          ctx.fillStyle = '#16141a'; ctx.fillRect(x + 3, GY - 4, o.w - 6, 1); ctx.fillRect(x + 1, GY - 3, o.w - 2, 3);
+          ctx.fillStyle = '#e8c23a'; for (let i = 2; i < o.w - 2; i += 6) { ctx.fillRect(x + i + 1, GY - 3, 3, 3); ctx.fillRect(x + i + 2, GY - 4, 2, 1); }
+          ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(x, GY, o.w, 1);
+          break;
+        }
+        case 'vehicle': {
+          const f = o.frames[Math.floor(o.t * 10) % 2], bob = o.sub === 'auto' && Math.sin(o.t * 14) > .6 ? -1 : 0, hy = y + o.hl;
+          ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(x + 2, GY - 1, o.w - 4, 2);
+          if (o.same) { // same-direction lorry: mirrored, tail lamps toward the dino, the classic rear slogan
+            ctx.save(); ctx.translate(x + o.w, y); ctx.scale(-1, 1); ctx.drawImage(f, 0, 0); ctx.restore();
+            ctx.fillStyle = Math.sin(t * 6) > 0 ? '#ff3b3b' : '#a01818'; ctx.fillRect(x, y + 15, 2, 2);
+            if (o.t < 2.5) this.text(ctx, 'HORN OK PLEASE', x + o.w / 2, y - 6, 5, '#ffd23f', { shadow: '#000', alpha: Math.min(1, 2.5 - o.t) });
+            break;
+          }
+          ctx.drawImage(f, x, y + bob);
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.fillStyle = 'rgba(255,240,170,.13)'; ctx.beginPath(); ctx.moveTo(x + 1, hy); ctx.lineTo(x - 26, hy - 4); ctx.lineTo(x - 26, hy + 6); ctx.fill();
+          const edge = x > this.W - 8; // still arriving: flash the headlamp at the screen edge
+          if (edge) { ctx.fillStyle = `rgba(255,240,170,${.3 + .3 * Math.sin(t * 20)})`; ctx.beginPath(); ctx.arc(this.W - 2, hy, 5, 0, 6.3); ctx.fill(); }
+          ctx.globalCompositeOperation = 'source-over';
+          if (edge) this.text(ctx, '!', this.W - 8, hy - 10, 9, '#ffd23f', { shadow: '#000' });
           break;
         }
         case 'plat': {
