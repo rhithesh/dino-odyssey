@@ -30,6 +30,31 @@
   }
   function disc(g, cx, cy, r, color) { g.fillStyle = color; for (let y = -r; y <= r; y++) { const hw = Math.round(Math.sqrt(r * r - y * y)); g.fillRect(cx - hw, cy + y, hw * 2, 1); } }
 
+  // 3x5 pixel font for shop signs: 15 bits per glyph, rows top to bottom. NARROW glyphs are 1px wide.
+  const GLYPH = {
+    A: '010101111101101', B: '110101110101110', C: '011100100100011', D: '110101101101110', E: '111100110100111',
+    F: '111100110100100', G: '011100101101011', H: '101101111101101', I: '111010010010111', J: '001001001101010',
+    K: '101101110101101', L: '100100100100111', M: '101111111101101', N: '110101101101101', O: '010101101101010',
+    P: '110101110100100', Q: '010101101110011', R: '110101110101101', S: '011100010001110', T: '111010010010010',
+    U: '101101101101111', V: '101101101101010', W: '101101111111101', X: '101101010101101', Y: '101101010010010',
+    Z: '111001010100111', 0: '111101101101111', 1: '010110010010111', 2: '110001010100111', 3: '110001010001110',
+    4: '101101111001001', 5: '111100110001110', 6: '011100111101111', 7: '111001010010010', 8: '111101111101111',
+    9: '111101111001110', '#': '101111101111101', '-': '000000111000000',
+  };
+  const NARROW = { "'": '11000', '.': '00001', '!': '11101' };
+  const textW = (s, k = 1) => { let w = 0; for (const ch of s) w += (ch === ' ' ? 2 : NARROW[ch] ? 1 : 3) + 1; return (w - 1) * k; };
+  // dot: draw each lit cell as a single pixel on a k-pitch grid (dot-matrix look).
+  function pxText(g, s, x, y, col, k = 1, dot = false) {
+    g.fillStyle = col; x = Math.round(x); y = Math.round(y);
+    for (const ch of s) {
+      if (ch === ' ') { x += 3 * k; continue; }
+      const gw = NARROW[ch] ? 1 : 3, bits = NARROW[ch] || GLYPH[ch] || GLYPH['#'];
+      for (let i = 0; i < bits.length; i++) if (bits[i] === '1') g.fillRect(x + (i % gw) * k, y + (i / gw | 0) * k, dot ? k - 1 : k, dot ? k - 1 : k);
+      x += (gw + 1) * k;
+    }
+  }
+  DR.pxText = { draw: pxText, w: textW };
+
   // ---------------- Theme painters ----------------
   // Each returns { layers:[{img,speed}], sky:canvas, ground:canvas, extra(ctx,t,scroll), front(ctx,t,scroll) }
   const THEMES = {
@@ -275,6 +300,315 @@
         },
       };
     },
+    // Indiranagar, Bengaluru on a clear day: skyline and raintrees, the Purple Line viaduct with a passing train,
+    // a wide strip of real 100 Feet Road / 12th Main shopfronts, then lamp posts, cable tangles and raintrees.
+    indiranagar(P, W, H, GY, LW) {
+      const s = mk(W, H), g = s.getContext('2d'); sky(g, W, H, P.skyTop, P.skyMid, P.skyBot, 16);
+      const sunX = W * .7 | 0, sunY = GY - 150;
+      disc(g, sunX, sunY, 20, mix(P.sun, P.skyBot, .5)); disc(g, sunX, sunY, 15, P.sun);
+      const R0 = rng(121);
+      for (let i = 0; i < 8; i++) { // fair-weather clouds
+        const cx = R0() * W | 0, cy = GY - 260 + R0() * 130 | 0, cw = 34 + R0() * 56 | 0;
+        g.fillStyle = '#ffffff'; g.fillRect(cx + 8, cy - 4, cw - 18, 4); g.fillRect(cx, cy, cw, 4);
+        g.fillStyle = mix(P.skyMid, '#ffffff', .55); g.fillRect(cx + 3, cy + 4, cw - 8, 1);
+      }
+
+      // Far: apartment blocks with water tanks, two cell towers, a raintree canopy band.
+      const far = mk(LW, H), fg = far.getContext('2d'), R1 = rng(122), lit = mix(P.far, P.sun, .55);
+      for (let x = 0; x < LW;) {
+        const bw = 18 + R1() * 30 | 0, bh = 60 + R1() * 80 | 0, top = GY - bh;
+        fg.fillStyle = P.far; fg.fillRect(x, top, bw, bh);
+        if (R1() < .45) fg.fillRect(x + 3 + (R1() * (bw - 10) | 0), top - 5, 6, 5);
+        fg.fillStyle = lit;
+        for (let wy = top + 5; wy < GY - 12; wy += 6) for (let wx = x + 3; wx < x + bw - 3; wx += 5) if (R1() < .16) fg.fillRect(wx, wy, 2, 2);
+        x += bw + 2 + (R1() * 10 | 0);
+      }
+      for (const tx of [130, 410]) {
+        fg.fillStyle = P.far; fg.fillRect(tx, GY - 196, 2, 140); fg.fillRect(tx - 3, GY - 190, 8, 2); fg.fillRect(tx - 2, GY - 180, 6, 2);
+        fg.fillStyle = '#ff5a4a'; fg.fillRect(tx, GY - 198, 2, 2);
+      }
+      ridge(fg, LW, H, GY - 18, 22, mix(P.far, '#1c2a22', .5), 123, { step: 2, harmonics: [3, 5, 8, 13] });
+
+      // Metro: drawn live so the train can run along the deck. The station comes round once per SPAN.
+      const DECK = GY - 108, PIER = 92, SPAN = PIER * 11, MS = .14, CARS = 6, CAR = 30, EVERY = 15;
+      const conc = mix(P.far, '#c9c0d0', .45), concD = mix(P.far, '#000000', .1);
+      const metro = {
+        draw(ctx, t, scroll) {
+          const R = (c, x, y, w, h) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), w, h); };
+          const off = scroll * MS;
+          for (let x = -(off % PIER); x < W + PIER; x += PIER) { R(concD, x, DECK + 6, 6, GY - DECK - 6); R(concD, x - 5, DECK + 6, 16, 3); }
+          let sx = Math.round(((300 - off) % SPAN + SPAN) % SPAN); if (sx > W) sx -= SPAN;
+          const station = sx > -170;
+          if (station) R(mix(conc, P.skyBot, .25), sx, DECK - 22, 150, 22);
+          R(conc, 0, DECK, W, 6); R(mix(conc, '#ffffff', .3), 0, DECK, W, 1); R(concD, 0, DECK + 5, W, 1);
+          const tx = -CARS * (CAR + 2) + (t % EVERY) * 130;
+          if (tx < W) for (let i = 0; i < CARS; i++) {
+            const cx = tx + i * (CAR + 2), y = DECK - 14;
+            if (cx > W || cx + CAR < 0) continue;
+            R('#c9c3d6', cx, y + 10, CAR, 3); R('#7a3cc4', cx, y, CAR, 11); R('#5b2a99', cx, y, CAR, 2);
+            R('#2a1b3d', cx + 2, y + 4, CAR - 4, 4);
+            for (let w = 3; w < CAR - 4; w += 5) R('#ffeec2', cx + w, y + 5, 3, 2);
+            if (i === CARS - 1) { R('#7a3cc4', cx + CAR, y + 2, 2, 9); R('#ffe9a0', cx + CAR, y + 7, 2, 2); }
+          }
+          R(conc, 0, DECK - 2, W, 2);
+          if (station) {
+            R(mix(P.mid, '#3a2a55', .4), sx - 4, DECK - 28, 158, 6); R(mix(conc, '#ffffff', .2), sx - 4, DECK - 28, 158, 1);
+            for (let x = sx; x <= sx + 150; x += 25) R(conc, x, DECK - 22, 2, 20);
+            R('#7a3cc4', sx + 30, DECK - 21, 90, 9);
+            pxText(ctx, 'INDIRANAGAR', sx + 30 + (90 - textW('INDIRANAGAR')) / 2, DECK - 19, '#ffffff');
+            R(concD, sx + 150, DECK + 6, 14, GY - DECK - 6); // stair tower down to CMH Road
+            for (let y = DECK + 12; y < GY - 30; y += 8) R(conc, sx + 152, y, 10, 1);
+          }
+        },
+      };
+
+      // Shopfront strip: each entry is a real place, painted in street order. Wider than LW so it repeats less.
+      const FP = GY - 16, shops = [], add = (w, paint, roof = null) => shops.push({ w, paint, roof });
+      let sg, lastTop = 0;
+      const F = (c, x, y, w, h) => { sg.fillStyle = c; sg.fillRect(x, y, w, h); };
+      const block = (x, w, h, fac) => {
+        const top = lastTop = FP - h;
+        F(fac, x, top, w, h); F(mix(fac, '#000000', .25), x, top, w, 2); F(mix(fac, '#000000', .15), x + w - 2, top, 2, h);
+        return top;
+      };
+      const sign = (x, y, w, bg, fg, text, k = 1) => { F(bg, x, y, w, 5 * k + 4); pxText(sg, text, x + (w - textW(text, k)) / 2, y + 2, fg, k); };
+      const awning = (x, y, w, c1, c2) => { for (let i = 0; i < w; i += 2) F(i % 4 ? c2 : c1, x + i, y, 2, 4); for (let i = 0; i < w - 1; i += 4) F(c1, x + i + 1, y + 4, 2, 1); };
+      const glass = (x, y, w, h, c) => { F('#2a2430', x - 1, y - 1, w + 2, h + 2); F(c, x, y, w, h); F('rgba(255,255,255,.3)', x + 1, y + 1, 1, h - 2); };
+      const front = (x, w, c) => { glass(x + 3, FP - 15, w - 16, 11, c); F('#2a2026', x + w - 11, FP - 15, 7, 15); F(mix(c, '#000000', .3), x + w - 10, FP - 14, 5, 13); };
+      const windows = (x, w, y0, y1, c) => {
+        for (let y = y0; y < y1 - 6; y += 9) {
+          F('rgba(0,0,0,.25)', x + 1, y - 2, w - 3, 1); // chajja ledge
+          for (let wx = x + 3; wx < x + w - 7; wx += 7) { F('#2a2430', wx, y, 5, 6); F(c, wx + 1, y + 1, 3, 4); }
+        }
+      };
+      const RF = rng(124), SHIRTS = ['#e8e4d8', '#3f6fd1', '#d1453f', '#f0c040', '#3fa36a', '#a04fc0', '#202020'];
+      const folk = x => {
+        F('#2a2026', x, FP - 2, 2, 2); F(SHIRTS[RF() * SHIRTS.length | 0], x, FP - 5, 2, 3);
+        F(RF() < .5 ? '#b07a52' : '#8a5a3c', x, FP - 7, 2, 2); F('#1a1418', x, FP - 7, 2, 1);
+      };
+      const plant = x => { F('#7a4a2a', x, FP - 4, 5, 4); F('#3f7a3a', x - 1, FP - 10, 7, 6); F('#5aa04a', x, FP - 9, 2, 2); };
+      const neon = (x, y, text, c) => {
+        F(c.replace('rgb', 'rgba').replace(')', ',.18)'), x - 2, y - 2, textW(text) + 4, 9);
+        pxText(sg, text, x, y, c);
+      };
+      const billboard = (text, bg, fg) => (x, w, top) => {
+        const bw = textW(text) + 6, bx = x + (w - bw) / 2 | 0;
+        F('#2a2430', bx + 3, top - 8, 1, 8); F('#2a2430', bx + bw - 4, top - 8, 1, 8);
+        F('#2a2430', bx - 1, top - 19, bw + 2, 11); sign(bx, top - 18, bw, bg, fg, text);
+      };
+      const tank = (x, w, top) => { const tx = x + 3 + (RF() * (w - 12) | 0); F('#1d1c22', tx, top - 6, 7, 6); F('#34333c', tx + 1, top - 6, 2, 6); };
+
+      // ---- 100 Feet Road ----
+      add(88, x => { // Nothing flagship: white minimal box, dot-matrix name, phones on plinths
+        const top = block(x, 88, 50, '#f1f1ef');
+        pxText(sg, 'NOTHING', x + 3, top + 6, '#111111', 3, true); F('#e3322b', x + 84, top + 18, 2, 2);
+        glass(x + 3, FP - 22, 82, 20, '#e9eef2');
+        for (let i = 0; i < 4; i++) { const px = x + 11 + i * 19; F('#cfd4d8', px - 2, FP - 6, 9, 4); F('#ffffff', px, FP - 12, 4, 6); F('#111111', px + 1, FP - 11, 1, 1); }
+      }, tank);
+      add(56, x => { // Starbucks
+        const top = block(x, 56, 44, '#e9e2d2');
+        windows(x, 56, top + 5, FP - 36, '#ffd99a');
+        disc(sg, x + 9, FP - 28, 6, '#1e6b47'); disc(sg, x + 9, FP - 28, 4, '#ffffff'); disc(sg, x + 9, FP - 28, 3, '#1e6b47');
+        pxText(sg, 'STARBUCKS', x + 17, FP - 30, '#1e6b47');
+        front(x, 56, '#ffcf8a');
+      });
+      add(46, x => { // Truffles: burgers and a queue
+        const top = block(x, 46, 44, '#f2e8d8');
+        windows(x, 46, top + 5, FP - 40, '#ffd99a');
+        F('#e0a040', x + 37, FP - 39, 6, 2); F('#5a2e1a', x + 37, FP - 37, 6, 1); F('#4caf50', x + 37, FP - 36, 6, 1); F('#e0a040', x + 37, FP - 35, 6, 2);
+        sign(x + 3, FP - 31, 40, '#c8232c', '#ffe2a0', 'TRUFFLES');
+        front(x, 46, '#ffd28a'); folk(x + 4); folk(x + 8); folk(x + 13);
+      }, billboard("WE'RE HIRING", '#ffffff', '#1a1a1a'));
+      add(62, x => { // Nature's Basket: green awning, fruit crates out front
+        const top = block(x, 62, 40, '#f4f1e6');
+        windows(x, 62, top + 5, FP - 32, '#fff1c4');
+        sign(x + 2, FP - 31, 58, '#2f7d3b', '#ffffff', "NATURE'S BASKET");
+        awning(x + 2, FP - 22, 58, '#2f7d3b', '#e9f2d8');
+        front(x, 62, '#f6f4dc');
+        const fruit = ['#d1453f', '#f28a2a', '#7cc04a', '#f0d040'];
+        for (let i = 0; i < 4; i++) { const cx = x + 4 + i * 10; F('#8a5a32', cx, FP - 5, 8, 5); F('#6a4224', cx, FP - 3, 8, 1); for (let j = 0; j < 4; j++) F(fruit[i], cx + j * 2, FP - 6 - (j % 2), 2, 2); }
+      });
+      add(66, x => { // Toit: brick brewpub, copper tanks behind the big window, queue on the footpath
+        const top = block(x, 66, 56, '#8e3b2b');
+        for (let y = top + 3; y < FP; y += 3) { F('#74301f', x, y, 64, 1); for (let bx = x + ((y / 3 | 0) % 2) * 3; bx < x + 64; bx += 6) F('#74301f', bx, y + 1, 1, 2); }
+        sign(x + 12, top + 6, 42, '#1b1716', '#f2c14e', 'TOIT', 2);
+        glass(x + 6, FP - 23, 32, 21, '#ffb45a');
+        for (let i = 0; i < 3; i++) { const tx = x + 9 + i * 10; F('#b8692f', tx, FP - 19, 7, 17); F('#f0b070', tx + 1, FP - 18, 1, 15); F('#8a4a22', tx, FP - 19, 7, 1); F('#8a4a22', tx + 2, FP - 21, 3, 2); }
+        F('#2a1a14', x + 46, FP - 17, 11, 17); F('#ffe6a0', x + 50, FP - 20, 3, 2);
+        folk(x + 8); folk(x + 12); folk(x + 17); folk(x + 21); folk(x + 26);
+      }, tank);
+      add(46, x => { // Glen's Bakehouse: cupcake on the sign
+        const top = block(x, 46, 40, '#efe0c4');
+        windows(x, 46, top + 5, FP - 40, '#ffd99a');
+        sign(x + 3, FP - 31, 40, '#7a1f2b', '#fff3e0', "GLEN'S");
+        F('#8a4b2a', x + 37, FP - 36, 5, 3); F('#f29bb8', x + 36, FP - 39, 7, 3); F('#d0213b', x + 39, FP - 41, 1, 2);
+        awning(x + 2, FP - 22, 42, '#7a1f2b', '#efe0c4');
+        glass(x + 4, FP - 15, 24, 11, '#ffe6c4'); for (let i = 0; i < 5; i++) F(['#f29bb8', '#8a4b2a', '#fff3e0'][i % 3], x + 6 + i * 4, FP - 8, 3, 3);
+        F('#5a2a1e', x + 32, FP - 15, 9, 15);
+      });
+      // ---- 12th Main ----
+      add(52, x => { // Third Wave: glass front full of laptops
+        const top = block(x, 52, 48, '#e8e1d3');
+        windows(x, 52, top + 5, FP - 32, '#ffd99a');
+        sign(x + 3, FP - 31, 46, '#3b2a20', '#f3e6cf', 'THIRD WAVE');
+        glass(x + 3, FP - 19, 46, 17, '#f4c98a');
+        for (let i = 0; i < 4; i++) { const px = x + 6 + i * 11; F('#2a2026', px, FP - 13, 2, 2); F('#2a2026', px - 1, FP - 11, 4, 4); F('#bfe4ff', px + 3, FP - 11, 2, 3); F('#6b4a2f', px - 2, FP - 7, 9, 1); }
+      }, billboard('SERIES A', '#ffd23a', '#1a1a1a'));
+      add(52, x => { // Blue Tokai upstairs, Bhane on the ground floor
+        const top = block(x, 52, 60, '#e6e2dc');
+        sign(x + 3, top + 5, 46, '#1f4fa0', '#ffffff', 'BLUE TOKAI');
+        glass(x + 4, top + 17, 44, 12, '#ffd99a');
+        for (let i = 0; i < 5; i++) { F('#2a2026', x + 7 + i * 8, top + 23, 2, 2); F('#2a2026', x + 6 + i * 8, top + 25, 4, 4); }
+        F('#2a2430', x + 2, top + 30, 48, 1); for (let i = 0; i < 48; i += 4) F('#2a2430', x + 2 + i, top + 30, 1, 4);
+        sign(x + 10, FP - 28, 32, '#111111', '#ffffff', 'BHANE');
+        glass(x + 4, FP - 16, 44, 14, '#dfe3e6');
+        for (let i = 0; i < 3; i++) { const mx = x + 10 + i * 13; F('#cfc6bd', mx, FP - 14, 2, 2); F('#3a3a40', mx - 1, FP - 12, 4, 6); F('#cfc6bd', mx, FP - 6, 1, 4); }
+      });
+      add(44, x => { // Subko: terracotta, arched door, warm inside
+        block(x, 44, 38, '#b85a35');
+        sign(x + 6, FP - 32, 32, '#3a1f14', '#f3dcc0', 'SUBKO');
+        F('#2a1610', x + 16, FP - 18, 12, 18); F('#2a1610', x + 17, FP - 19, 10, 1); F('#ffb45a', x + 18, FP - 16, 8, 16);
+        plant(x + 5); plant(x + 34);
+      });
+      add(50, x => { // Cafe Noir on the first floor, a medicals below
+        const top = block(x, 50, 56, '#d8d0c4');
+        sign(x + 3, top + 5, 44, '#111111', '#ffffff', 'CAFE NOIR');
+        awning(x + 3, top + 15, 44, '#1d3f8a', '#f2f2f2');
+        glass(x + 4, top + 21, 42, 10, '#ffd99a');
+        sign(x + 6, FP - 28, 38, '#1e8a4a', '#ffffff', 'MEDICALS');
+        front(x, 50, '#e8fff0');
+      }, tank);
+      add(54, x => { // The Pizza Bakery: oven glow
+        const top = block(x, 54, 40, '#a8442f');
+        windows(x, 54, top + 5, FP - 32, '#ffd99a');
+        sign(x + 3, FP - 31, 48, '#f3e3c8', '#a8442f', 'PIZZA BAKERY');
+        glass(x + 6, FP - 18, 22, 14, '#ff9a3a'); F('#ffd27a', x + 12, FP - 9, 10, 4); F('#fff1b0', x + 15, FP - 8, 4, 2);
+        F('#3a1a12', x + 36, FP - 16, 9, 16);
+      });
+      add(42, x => { // Alpaca Chocolate Drink House
+        block(x, 42, 36, '#5a3424');
+        sign(x + 4, FP - 30, 34, '#f3e3c8', '#5a3424', 'ALPACA');
+        front(x, 42, '#ffcf9a');
+      }, billboard('#PEAKBENGALURU', '#1a1a1a', '#ffd23a'));
+      add(36, x => { // Kura
+        block(x, 36, 34, '#f2efe8');
+        sign(x + 5, FP - 29, 26, '#2a2a2a', '#ffffff', 'KURA');
+        front(x, 36, '#ffe2b0'); plant(x + 3);
+      });
+      add(44, x => { // Araku: wood slats and plants
+        const top = block(x, 44, 40, '#6b4a2f');
+        for (let vx = x + 3; vx < x + 41; vx += 3) F('#5a3d26', vx, top + 2, 1, FP - top - 2);
+        sign(x + 5, FP - 31, 34, '#2e5a3a', '#f3e6cf', 'ARAKU');
+        front(x, 44, '#ffd99a'); plant(x + 4);
+      }, tank);
+      add(46, x => { // Lavonne: pastel, pastry case
+        const top = block(x, 46, 40, '#f3c6cf');
+        windows(x, 46, top + 5, FP - 32, '#fff0d0');
+        sign(x + 3, FP - 31, 40, '#7a2e48', '#fff0f4', 'LAVONNE');
+        awning(x + 2, FP - 22, 42, '#7a2e48', '#fff0f4');
+        front(x, 46, '#fff4e8'); for (let i = 0; i < 6; i++) F(['#f29bb8', '#e0a040', '#7a2e48'][i % 3], x + 5 + i * 4, FP - 8, 3, 2);
+      });
+      add(58, x => { // Rameshwaram Cafe: steel counter, crowd, steam
+        const top = block(x, 58, 46, '#f6efe0');
+        windows(x, 58, top + 5, FP - 34, '#ffe6a0');
+        sign(x + 3, FP - 35, 52, '#ffd23a', '#9e1b1b', 'RAMESHWARAM');
+        sign(x + 19, FP - 26, 20, '#9e1b1b', '#ffd23a', 'CAFE');
+        F('#ffe0a0', x + 4, FP - 17, 50, 5); F('#b8c0c8', x + 4, FP - 12, 50, 4); F('#e2e8ee', x + 4, FP - 12, 50, 1);
+        for (let i = 0; i < 6; i++) F('rgba(255,255,255,.55)', x + 8 + i * 8 + (i % 2), FP - 20 - (i % 3), 1, 2);
+        for (let i = 0; i < 9; i++) folk(x + 4 + i * 6);
+      });
+      add(50, x => { // Namdhari's Fresh: veg stall
+        const top = block(x, 50, 38, '#fff4e0');
+        windows(x, 50, top + 5, FP - 32, '#ffe6a0');
+        sign(x + 4, FP - 31, 42, '#e86b1f', '#ffffff', "NAMDHARI'S");
+        front(x, 50, '#f6f4dc');
+        for (let i = 0; i < 3; i++) { const cx = x + 4 + i * 10; F('#8a5a32', cx, FP - 5, 8, 5); for (let j = 0; j < 4; j++) F(['#3fa34a', '#7cc04a', '#d1453f'][i], cx + j * 2, FP - 6 - (j % 2), 2, 2); }
+      });
+      add(46, x => { // Quick-commerce dark store: shutter half up, delivery boxes stacked out front
+        block(x, 46, 34, '#7c7684');
+        sign(x + 2, FP - 30, 42, '#2a2430', '#ffe14a', 'DARK STORE');
+        F('#a9a3b0', x + 4, FP - 20, 38, 12); for (let y = FP - 20; y < FP - 8; y += 2) F('#8a8494', x + 4, y, 38, 1);
+        F('#1a1620', x + 4, FP - 8, 38, 8);
+        const box = ['#6a2bd0', '#f4d21f', '#f26b1d'];
+        for (let i = 0; i < 5; i++) F(box[i % 3], x + 6 + (i % 3) * 8 + (i > 2 ? 4 : 0), FP - 6 - (i > 2 ? 6 : 0), 7, 6);
+      }, billboard('10 MIN DELIVERY', '#6a2bd0', '#ffffff'));
+      add(40, x => { // Jimi's Beer Cafe: neon
+        const top = block(x, 40, 38, '#2a2230');
+        windows(x, 40, top + 5, FP - 30, '#ff6a5a');
+        neon(x + (40 - textW("JIMI'S")) / 2 | 0, FP - 27, "JIMI'S", 'rgb(125,249,255)');
+        F('#140f18', x + 15, FP - 16, 10, 16); F('rgb(125,249,255)', x + 15, FP - 17, 10, 1);
+      });
+      add(58, x => { // 403 Forbidden: red neon, a bouncer at the door
+        const top = block(x, 58, 42, '#1d1a22');
+        windows(x, 58, top + 5, FP - 32, '#ff4a6a');
+        neon(x + (58 - textW('403 FORBIDDEN')) / 2 | 0, FP - 28, '403 FORBIDDEN', 'rgb(255,59,74)');
+        F('#100c14', x + 22, FP - 16, 12, 16); F('rgb(255,59,74)', x + 22, FP - 17, 12, 1);
+        F('#111111', x + 36, FP - 6, 3, 6); F('#8a5a3c', x + 36, FP - 8, 3, 2);
+      }, tank);
+
+      const GAP = 3, SW = shops.reduce((a, b) => a + b.w + GAP, 0);
+      const strip = mk(SW, H); sg = strip.getContext('2d');
+      let sx0 = 0; const at = [];
+      for (const sh of shops) {
+        at.push(sx0);
+        sh.paint(sx0);
+        if (sh.roof) sh.roof(sx0, sh.w, lastTop);
+        sx0 += sh.w + GAP;
+      }
+      // Footpath slabs along the whole strip, plus street-name boards where the road changes.
+      F('#8c8494', 0, FP, SW, 4); F('#a8a0b0', 0, FP, SW, 1); for (let x = 0; x < SW; x += 9) F('#6e6878', x, FP + 1, 1, 3);
+      for (let x = 0; x < SW; x += 12) { F('#16141a', x, FP + 4, 6, 2); F('#e8c23a', x + 6, FP + 4, 6, 2); } // painted kerb
+      F(P.ground, 0, FP + 6, SW, GY - FP - 6); F('rgba(0,0,0,.18)', 0, FP + 6, SW, 2); // far lane of the road
+      const street = (x, text) => { const bw = textW(text) + 4; F('#3a3540', x, FP - 34, 1, 34); sign(x - bw / 2 | 0, FP - 44, bw, '#1e6b3a', '#ffffff', text); };
+      street(at[2] - 2, '100 FT RD'); street(at[6] - 2, '12TH MAIN');
+
+      // Near: lamp posts linked by sagging cable bundles, raintrees.
+      const near = mk(LW, H), ng = near.getContext('2d'), R3 = rng(125);
+      const N = (c, x, y, w, h) => { ng.fillStyle = c; ng.fillRect(x, y, w, h); };
+      const poles = [100, 250, 400, 530];
+      for (let i = 0; i < poles.length; i++) {
+        const a = poles[i] + 1, b = (i + 1 < poles.length ? poles[i + 1] : poles[0] + LW) + 1;
+        for (let k = 0; k < 4; k++) {
+          const y0 = GY - 118 + k * 3, sag = 6 + k * 2 + R3() * 5;
+          for (let x = a; x <= b; x++) { const u = (x - a) / (b - a); N('#1a1520', x % LW, Math.round(y0 + sag * 4 * u * (1 - u)), 1, 1); }
+        }
+        // cable tangle at the pole
+        for (let k = 0; k < 14; k++) N('#1a1520', poles[i] - 4 + (R3() * 10 | 0), GY - 120 + (R3() * 14 | 0), 2 + (R3() * 3 | 0), 1);
+      }
+      for (const x of poles) {
+        const base = GY - 10; // poles stand on the kerb
+        N('#3a3540', x, GY - 122, 2, 112); N('#4e4856', x, GY - 122, 1, 112); N('#2a2430', x - 1, base - 3, 4, 3);
+        N('#3a3540', x, GY - 80, 10, 2); N('#2a2430', x + 6, GY - 78, 5, 2); N('#ffe6a0', x + 7, GY - 76, 3, 1);
+      }
+      const leaf = '#1f3a2a', leafLit = '#2f5a3a';
+      for (const tx of [30, 330]) {
+        N('#2b201c', tx, GY - 92, 4, 82); N('#3a2c26', tx, GY - 92, 1, 82);
+        for (let k = 0; k < 20; k++) { const by = GY - 92 - k; N('#2b201c', tx - k, by, 2, 1); N('#2b201c', tx + 3 + k, by + 2, 2, 1); }
+        for (let j = 0; j < 16; j++) disc(ng, tx - 34 + (R3() * 72 | 0), GY - 140 + (R3() * 34 | 0), 7 + (R3() * 9 | 0), leaf);
+        for (let j = 0; j < 30; j++) N(leafLit, tx - 34 + (R3() * 72 | 0), GY - 150 + (R3() * 40 | 0), 2, 2);
+      }
+
+      const lampX = (p, scroll) => ((p - scroll * .55) % LW + LW) % LW;
+      return {
+        sky: s,
+        layers: [{ img: far, speed: .06 }, metro, { img: strip, speed: .3 }, { img: near, speed: .55 }],
+        front(ctx, t, scroll) { // lamp light cones
+          ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(255,214,140,.05)';
+          for (const p of poles) for (const sx of [lampX(p, scroll), lampX(p, scroll) - LW]) {
+            if (sx < -30 || sx > W + 10) continue;
+            ctx.beginPath(); ctx.moveTo(sx + 8, GY - 75); ctx.lineTo(sx - 8, GY); ctx.lineTo(sx + 26, GY); ctx.fill();
+          }
+          ctx.globalCompositeOperation = 'source-over';
+        },
+        groundFx(ctx, t, scroll) { // lamp reflections on the wet road
+          ctx.fillStyle = 'rgba(255,214,140,.14)';
+          for (const p of poles) for (const sx of [lampX(p, scroll), lampX(p, scroll) - LW]) {
+            if (sx < -10 || sx > W + 10) continue;
+            for (let y = GY + 5, i = 0; y < GY + 22; y += 3, i++) ctx.fillRect(Math.round(sx + 7 + Math.sin(t * 3 + i) * .8), y, 3 - (i > 3 ? 1 : 0), 1);
+          }
+        },
+      };
+    },
     // The Chrome "no internet" page: flat paper sky, pixel clouds, one thin horizon.
     retro(P, W, H, GY, LW) {
       const s = mk(W, H), g = s.getContext('2d');
@@ -328,6 +662,12 @@
       g.fillStyle = 'rgba(37,232,255,.10)'; for (let x = 12; x < LW; x += 34) g.fillRect(x, 8, 12, 1);
       g.fillStyle = P.accent2; for (let x = 26; x < LW; x += 34) g.fillRect(x, 6, 1, 1);
     }
+    if (L.bg === 'indiranagar') {
+      g.clearRect(0, 0, LW, gh); g.fillStyle = P.ground; g.fillRect(0, 0, LW, gh);
+      g.fillStyle = 'rgba(255,255,255,.07)'; g.fillRect(0, 0, LW, 1);
+      g.fillStyle = 'rgba(0,0,0,.22)'; for (let i = 0; i < 26; i++) g.fillRect(R() * LW | 0, 6 + R() * (gh - 8) | 0, 8 + R() * 22 | 0, 3 + R() * 4 | 0); // patch repairs
+      g.fillStyle = 'rgba(232,228,216,.7)'; const ly = Math.min(gh - 4, 20); for (let x = 4; x < LW; x += 26) g.fillRect(x, ly, 14, 2); // lane dashes
+    }
     if (L.bg === 'shore') {
       g.clearRect(0, 2, LW, gh); g.fillStyle = P.ground; g.fillRect(0, 2, LW, gh);
       g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(0, 2, LW, 1);
@@ -347,8 +687,9 @@
       ctx.drawImage(B.sky, 0, 0);
       if (B.extra) B.extra(ctx, time, scroll);
       for (const l of B.layers) {
-        const x = -((scroll * l.speed) % B.LW);
-        ctx.drawImage(l.img, Math.floor(x), 0); ctx.drawImage(l.img, Math.floor(x) + B.LW - 1, 0);
+        if (l.draw) { l.draw(ctx, time, scroll); continue; } // live layer (e.g. a moving train)
+        const lw = l.img.width, x = -((scroll * l.speed) % lw);
+        ctx.drawImage(l.img, Math.floor(x), 0); ctx.drawImage(l.img, Math.floor(x) + lw - 1, 0);
       }
       if (B.front) B.front(ctx, time, scroll);
     },

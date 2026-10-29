@@ -204,7 +204,7 @@
     ['blur-[13px]', 'brightness-[.6]', 'saturate-[.85]', 'scale-[1.06]'].forEach(cls => $('game').classList.toggle(cls, listScreen));
   }
   function startDemo() {
-    const pool = LEVELS.filter(L => levelOpen(L) && !L.alwaysOpen && ['run'].includes(L.mode));
+    const pool = LEVELS.filter(L => levelOpen(L) && !L.retro && ['run'].includes(L.mode));
     const L = pool[(Math.random() * pool.length) | 0] || LEVELS[0];
     current = null; document.body.classList.toggle('retro', !!L.retro); document.body.classList.remove('endless');
     game.load(L, { demo: true, dino: save.dino });
