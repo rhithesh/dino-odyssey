@@ -312,6 +312,89 @@ window.DR = window.DR || {};
     return out;
   };
 
+  // ---------------- Frozen Aurora wildlife ----------------
+  // Side views facing left (walking toward the dino). Two frames each: feet, legs or tail move.
+  function genAnimal(kind, frame) {
+    const size = { penguin: [10, 14], bear: [35, 20], mammoth: [36, 28] }[kind];
+    const c = mk(size[0], size[1]), g = c.getContext('2d');
+    const F = (col, x, y, w = 1, h = 1) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+    const oval = (col, cx, cy, rx, ry) => {
+      for (let y = Math.ceil(-ry); y <= ry; y++) { const hw = Math.round(rx * Math.sqrt(Math.max(0, 1 - (y * y) / (ry * ry)))); F(col, Math.round(cx - hw), Math.round(cy + y), hw * 2 + 1, 1); }
+    };
+    const EYE = '#10141a';
+    if (kind === 'penguin') {
+      oval('#1f2433', 5, 7, 4, 6);            // back and head
+      oval('#f5fbff', 4, 8.5, 2.5, 4);        // belly
+      F('#ffd860', 3, 5, 2, 1);               // yellow neck patch
+      F('#ffffff', 3, 3); F(EYE, 2, 3);       // eye
+      F('#ff9a1f', 0, 4, 2, 1);               // beak
+      F('#121621', 7, 7, 1, 4); F('#121621', 8, 9, 1, 2); // flipper
+      if (frame) { F('#ff9a1f', 2, 13, 2, 1); F('#ff9a1f', 6, 13, 2, 1); }
+      else { F('#ff9a1f', 3, 13, 2, 1); F('#ff9a1f', 5, 13, 2, 1); F('#ff9a1f', 1, 12, 1, 1); }
+    } else if (kind === 'bear') {
+      // Polar bear: creamy coat, long neck carrying a small head low, hindquarters higher than the
+      // shoulders, small rounded ears, black nose and eye, thick legs on big furry paws.
+      const w = '#f3efe2', hi = '#fffdf5', sh = '#d2d4cf', dk = '#b9bcb8';
+      oval(w, 23, 8.5, 10, 5.5);              // barrel body
+      oval(w, 28, 7.5, 5.5, 6);               // high hindquarters
+      oval(w, 14, 10, 6, 5);                  // shoulders
+      oval(w, 9, 11, 4.5, 3.2);               // long neck, sloping down
+      oval(w, 5, 12, 4, 3);                   // head
+      F(w, 0, 12, 3, 3); F(sh, 1, 14, 4, 1);  // long muzzle, jaw line
+      F(EYE, 0, 12, 2, 1);                    // black nose
+      F(EYE, 5, 10);                          // eye
+      F(w, 7, 8, 2, 1); F(sh, 8, 8);          // small rounded ear
+      for (let x = 17; x < 32; x += 3) F(hi, x, 3 + (x > 25 ? 0 : 1), 2, 1); // light along the back
+      oval(sh, 22, 13, 8, 1.2);               // shaded belly
+      F(sh, 33, 6, 1, 2);                     // stubby tail
+      // walking: near (light) and far (shaded) legs at the front and the back swap each frame
+      const [nf, ff, nb, fb] = frame ? [10, 14, 28, 24] : [13, 11, 25, 28];
+      const leg = (x, col, paw) => { F(col, x, 14, 4, 5); F(paw, x - 1, 19, 5, 1); };
+      leg(ff, dk, sh); leg(fb, dk, sh); leg(nf, w, hi); leg(nb, w, hi);
+    } else {
+      const b = '#7a4a2a', d = '#5a341c', l = '#9a6a42', T = '#f4ecd8';
+      oval(b, 21, 13, 13, 9);                 // body
+      oval(b, 11, 8, 7, 7);                   // domed head
+      for (let x = 12; x < 33; x += 3) F(d, x, 15, 1, 6); // shaggy coat
+      for (let x = 14; x < 30; x += 4) F(l, x, 6, 2, 1);
+      F(d, 12, 9, 3, 5);                      // ear
+      F(EYE, 7, 8);
+      F(b, 3, 10, 3, 14); F(b, 2, 22, 2, 2); F(b, 1, 21, 1, 2); // trunk, curled tip
+      F(d, 4, 12, 1, 10);
+      [[8, 15], [7, 16], [6, 17], [5, 18], [4, 19], [3, 19], [2, 18], [1, 17]].forEach(([x, y]) => F(T, x, y, 1, 2)); // tusk
+      F(d, 34, 11, 2, 1); F(d, 35, 12, 1, 3); // tail
+      const legs = frame ? [[10, 0], [16, -1], [24, -1], [29, 0]] : [[10, -1], [16, 0], [24, 0], [29, -1]];
+      legs.forEach(([x, lift]) => { F(b, x, 19, 5, 8 + lift); F(d, x, 26 + lift, 5, 1); F(l, x, 19, 1, 6); });
+    }
+    return c;
+  }
+  // Snow-block igloo with an entrance tunnel on the left (toward the dino) and a dark doorway.
+  function genIgloo() {
+    const W = 44, H = 22, c = mk(W, H), g = c.getContext('2d');
+    const F = (col, x, y, w = 1, h = 1) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+    const dome = (cx, rx, ry, base, shade) => {
+      for (let y = 0; y < ry; y++) {
+        const hw = Math.round(rx * Math.sqrt(1 - (y / ry) ** 2)), sh = Math.round(hw * .45);
+        F(base, cx - hw, H - 1 - y, hw * 2 + 1, 1); F(shade, cx + sh, H - 1 - y, hw - sh + 1, 1);
+      }
+    };
+    dome(27, 16, 20, '#eef6ff', '#d3e3f2');
+    const id = g.getImageData(0, 0, W, H).data, inside = (x, y) => id[(y * W + x) * 4 + 3] > 0;
+    for (let y = H - 5, row = 0; y > 1; y -= 4, row++) { // snow-block courses, joints staggered
+      for (let x = 12; x < W; x++) if (inside(x, y)) F('#b9cfe4', x, y);
+      for (let x = 12 + (row % 2) * 4; x < W; x += 8) for (let yy = y + 1; yy < Math.min(H, y + 4); yy++) if (inside(x, yy)) F('#b9cfe4', x, yy);
+    }
+    F('#ffffff', 19, 4, 6, 1); F('#ffffff', 16, 6, 3, 1);           // snow catching the light
+    dome(8, 8, 10, '#e6f0fa', '#cadbeb');                           // entrance tunnel
+    for (let y = 0; y < 7; y++) { const hw = Math.round(3.5 * Math.sqrt(1 - (y / 7) ** 2)); F('#1a2638', 6 - hw, H - 1 - y, hw * 2 + 1, 1); } // doorway
+    return outline(c, '#16233a');
+  }
+  const genCritters = () => {
+    const out = {};
+    for (const k of ['penguin', 'bear', 'mammoth']) out[k] = [0, 1].map(f => outline(genAnimal(k, f), '#16233a'));
+    return out;
+  };
+
   // ---------------- Ground obstacle generators ----------------
   const CACTUS_S = ['   ##   ', '  ####  ', '  #### #', '# #### #', '# #### #', '# #### #', '# ######', '######  ', '  ####  ', '  ####  ', '  ####  ', '  ####  ', '  ####  ', '  ####  '];
   const CACTUS_L = ['     ##     ', '    ####    ', '    ####    ', '    ####  # ', ' #  ####  ##', '##  ####  ##', '##  ####  ##', '##  ####  ##', '##  ####  ##', '##  #######', '##  ######  ', '#######     ', ' ######     ', '    ####    ', '    ####    ', '    ####    ', '    ####    ', '    ####    ', '    ####    ', '    ####    ', '    ####    '];
@@ -498,6 +581,8 @@ window.DR = window.DR || {};
         heart: HEART,
         boss: L.boss ? genBoss(L.boss.kind, P) : null,
         traffic: L.traffic ? genTraffic() : null,
+        critters: L.critters ? genCritters() : null,
+        igloo: L.igloo ? genIgloo() : null,
       };
       return (cache[L.id] = s);
     },

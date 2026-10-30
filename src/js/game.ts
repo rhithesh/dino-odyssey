@@ -161,7 +161,7 @@
         closeN: 0, hits: 0, streak: 0, obs: [], coins: [], nextSpawn: L.speed[0] * 1.2, boss: null, bossDone: false,
         finishing: false, finish: null, banner: null, light: 0, lightT: 3 + Math.random() * 3, gustT: 7, gust: 0,
         shake: 0, hitstop: 0, slow: 1, zoom: demo ? 1 : 1.35, lb: demo ? 0 : 1, trail: [], runTime: 0, ceilA: L.mode === 'flip' ? 1 : 0,
-        tidePhase: 'idle', tideT: 7 + Math.random() * 3, tideLevel: 0, tideHit: false, waterY: this.GY, laserFlip: false,
+        iglooN: 0, tidePhase: 'idle', tideT: 7 + Math.random() * 3, tideLevel: 0, tideHit: false, waterY: this.GY, laserFlip: false,
       });
       this.p = { x: demo ? 50 : -40, y: this.GY, vy: 0, g: 1, onGround: true, duck: false, inv: 0, coyote: 0, buf: 0, hold: 0, rot: 0, dead: false, air: this.st.air, airT: 0, dash: 0, dashCd: 0, jt: -1, y0: 0, cut: true, sq: 0 };
       this.phase = demo ? 'demo' : 'intro';

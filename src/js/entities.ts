@@ -24,6 +24,8 @@
     if (L.lasers && d > .12 && r < .34) { this.addLaser(x); return; }
     if (L.roadHazards && R() < .2) { this.addRoadHazard(x); return; }
     if (L.traffic && R() < .62) { this.addVehicle(x, d); return; }
+    if (L.igloo && !this.endless && this.iglooN < 2 && d > .22 + .4 * this.iglooN) { this.iglooN++; this.addIgloo(x); return; }
+    if (L.critters && R() < .42) { this.addCritter(x, d); return; }
     if (this.fallersOn && !this.demo && r < .24) {
       const n = d > .5 && R() < .5 ? 2 : 1;
       for (let i = 0; i < n; i++) this.addFaller(150 + i * 70 + R() * 50, L.fallers === 'icicle' ? 'icicle' : 'meteor');
@@ -130,6 +132,124 @@
     if (sub === 'bike' && d > .4 && R() < .4) push(x + 104, set[R() * set.length | 0]); // delivery riders travel in pairs
     if (!this.demo) DR.Audio.sfx(cfg.horn);
   };
+  // Frozen Aurora wildlife: penguin parades, polar bears and the odd mammoth walk toward the dino; a lone
+  // penguin waddles the other way (same direction as the dino), so the dino catches it from behind.
+  // vx = own walking pace toward the dino, added to the scroll (negative = walking away). Long parades need a held jump.
+  const CRIT = { penguin: { vx: [12, 22], rate: 6 }, bear: { vx: [22, 32], rate: 3.5 }, mammoth: { vx: [6, 12], rate: 3 } };
+  G.addCritter = function (x, d) {
+    const r = R(), kind = d > .25 && r < .14 ? 'mammoth' : r < .78 ? 'penguin' : 'bear';
+    const frames = this.S.critters[kind], img = frames[0], cfg = CRIT[kind], vx = lerp(cfg.vx[0], cfg.vx[1], R());
+    const add = ox => this.obs.push({ kind: 'critter', sub: kind, frames, rate: cfg.rate, x: ox, y: this.GY - img.height, w: img.width, h: img.height, t: R() * 2, vx, step: 0 });
+    if (kind === 'penguin' && R() < .45) { // a lone penguin heading the same way as the dino, just slower
+      add(x); const o = this.obs[this.obs.length - 1]; o.same = true; o.vx = -lerp(14, 24, R());
+      this.addCoinArc(x + img.width / 2 + 20, 'hop', 4);
+    } else if (kind === 'penguin') { // a parade in single file, all at the same pace
+      const n = 2 + (R() < .4 + d * .5 ? 1 : 0) + (R() < d * .6 ? 1 : 0) + (R() < d * .3 ? 1 : 0);
+      for (let i = 0; i < n; i++) add(x + i * 10 + (R() * 3 | 0));
+      this.addCoinArc(x + n * 5, n >= 3 ? 'full' : 'hop', 5);
+      this.nextSpawn += n * 10;
+    } else {
+      add(x);
+      if (kind === 'mammoth' || kind === 'bear') { this.addCoinArc(x + img.width / 2, 'full', 5); this.nextSpawn += this.speed * .3; }
+    }
+  };
+  // ---------------- the igloo guy (Frozen Aurora set piece, no hitbox) ----------------
+  // He chills in a deck chair outside his igloo: sunglasses, crossed legs, tapping foot, smoke rings, music.
+  // When the dino shows up he leaps out of the chair (hat flies, cigarette drops), screams, sprints for the
+  // door and dives in head-first. The igloo shudders, snow bursts off the roof, and eyes peek from the doorway.
+  // Positions are relative to the chair's x (o.x - 18) and the ground line.
+  const SHOCK = .28, RUN = .6, DIVE = .78;
+  G.addIgloo = function (x) {
+    const img = this.S.igloo;
+    this.obs.push({ kind: 'igloo', x: x + 22, y: this.GY - img.height + 1, w: img.width, h: img.height, t: 0, st: 'chill', st0: 0, puffs: [], puffT: .3, note: 1, hat: null, butt: null, wob: 0 });
+    this.nextSpawn = Math.max(this.nextSpawn, img.width + 260);
+  };
+  G.iglooUpdate = function (o, dt) {
+    const p = this.p, GY = this.GY, sx = o.x - 18, k = o.t - o.st0;
+    if (o.st === 'chill') {
+      if ((o.puffT -= dt) <= 0) { o.puffT = .9 + R() * .6; o.puffs.push({ x: -2, y: -15, r: .5, a: .9, vx: -5 }); }
+      if ((o.note -= dt) <= 0) { o.note = 1.2 + R() * .8; this.fx.text(sx + 9, GY - 22, R() < .5 ? '♪' : '♫', '#ffd860', 7, 1); }
+      if (sx - (p.x + 16) < 130 && !p.dead) { // the dino is here: comedy slow-mo while he panics
+        o.st = 'shock'; o.st0 = o.t; this.slow = Math.min(this.slow, .4);
+        o.hat = { x: 5, y: -20, vx: 34, vy: -120, rot: 0 }; o.butt = { x: -2 };
+        this.fx.text(sx + 5, GY - 32, '!!', '#ff3b5c', 13, .7); DR.Audio.sfx('warn');
+      }
+    } else if (o.st === 'shock' && k > SHOCK) {
+      o.st = 'run'; this.fx.text(sx + 8, GY - 30, 'AAAAH!', '#ffffff', 10, .9); DR.Audio.sfx('whistle');
+    } else if (o.st === 'run') {
+      const px = sx + 4 + 20 * ease((k - SHOCK) / (RUN - SHOCK));
+      if (R() < .8) this.fx.burst(px - 3, GY - 1, 1, { color: ['#ffffff', '#dfeefa'], speed: 50, angle: Math.PI, spread: .9, life: .35, grav: 60, size: 2 }); // kicked-up snow
+      if (R() < .3) this.fx.burst(px, GY - 19, 1, { color: '#9fd8ff', speed: 35, grav: 220, life: .4, size: 1 }); // sweat
+      if (k > RUN) { o.st = 'dive'; DR.Audio.sfx('jump'); }
+    } else if (o.st === 'dive' && k > DIVE) {
+      o.st = 'in'; o.wob = .6; this.shake = Math.max(this.shake, 4); DR.Audio.sfx('bump'); DR.Audio.sfx('land');
+      this.fx.burst(o.x + 28, o.y + 2, 26, { color: ['#ffffff', '#dfeefa', '#b9cfe4'], speed: 100, grav: 170, life: .9, size: 2 });
+      this.fx.text(o.x + 22, o.y - 8, 'SLAM!', '#ffd860', 10, .9);
+    }
+    if (o.wob > 0) o.wob -= dt;
+    const h = o.hat;
+    if (h && h.y < -2) { h.vy += 320 * dt; h.x += h.vx * dt; h.y = Math.min(-2, h.y + h.vy * dt); h.rot += 14 * dt; }
+    if (o.butt && (o.puffT -= dt) <= 0) { o.puffT = .45; o.puffs.push({ x: o.butt.x + 1, y: -3, r: .5, a: .55, vx: 2 }); } // still smoking on the ground
+    for (const s of o.puffs) { s.y -= 10 * dt; s.x += s.vx * dt; s.r += 3.2 * dt; s.a -= .4 * dt; }
+    o.puffs = o.puffs.filter(s => s.a > 0);
+  };
+  const GUY = { parka: '#ff7a2a', parkaD: '#c8561a', fur: '#efe6d6', skin: '#e8b48a', hat: '#d8304a', pants: '#2a3a5a', boot: '#3a2a20', shades: '#111111' };
+  G.drawIgloo = function (ctx, o) {
+    const GY = this.GY, sx = Math.round(o.x - 18), k = o.t - o.st0, t = o.t, C = GUY;
+    const F = (c, x, y, w = 1, h = 1) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), w, h); };
+    // igloo, shuddering after the slam
+    const jx = o.wob > 0 ? Math.round((R() - .5) * 5 * o.wob / .6) : 0, x = Math.round(o.x) + jx;
+    ctx.fillStyle = 'rgba(20,40,70,.2)'; ctx.fillRect(x + 2, GY - 1, o.w - 4, 2);
+    ctx.drawImage(this.S.igloo, x, Math.round(o.y));
+    if (o.st === 'in' && k > DIVE + .7 && t % 2.4 > .14) { // eyes in the dark doorway, glancing around
+      const look = Math.floor(t / 1.2) % 2;
+      F('#ffffff', x + 5, GY - 5, 2, 1); F('#ffffff', x + 9, GY - 5, 2, 1); F('#10141a', x + 5 + look, GY - 5); F('#10141a', x + 9 + look, GY - 5);
+    }
+    // deck chair: upright while he chills, knocked flat afterwards
+    ctx.save(); ctx.translate(sx + 4, GY);
+    if (o.st !== 'chill') ctx.rotate(-Math.min(1, (k / .2)) * 1.35);
+    F('#8a5a2a', -5, -6, 11, 1); F('#3aa0d8', -5, -7, 10, 1); F('#ffffff', -2, -7, 2, 1); F('#ffffff', 2, -7, 2, 1); // seat
+    F('#8a5a2a', -4, -5, 1, 5); F('#8a5a2a', 4, -5, 1, 5);
+    for (let i = 0; i < 8; i++) { F('#3aa0d8', 4 + (i >> 1), -8 - i, 2, 1); } // reclined back
+    ctx.restore();
+    // the guy
+    const guy = (gx, gy, face, opts: any = {}) => {
+      ctx.save(); ctx.translate(Math.round(gx), Math.round(gy)); ctx.scale(face, 1); if (opts.rot) ctx.rotate(opts.rot); if (opts.s) ctx.scale(opts.s, opts.s);
+      const lf = opts.legs || 0;
+      F(C.pants, -2 + lf, -7, 2, 5); F(C.pants, 0 - lf, -7, 2, 5); F(C.boot, -3 + lf * 2, -2, 3, 2); F(C.boot, 0 - lf * 2, -2, 3, 2); // legs
+      F(C.parka, -3, -13, 6, 7); F(C.parkaD, 1, -13, 2, 7); F(C.fur, -3, -14, 6, 1);            // parka
+      F(C.skin, -2, -17, 4, 3); F(C.shades, -2, -16 + (opts.askew ? 1 : 0), 3, 1);              // face, sunglasses
+      if (opts.scream) F('#5a1010', -2, -14 + 0, 2, 1);
+      const wave = opts.wave || 0; // arms up, flailing
+      F(C.parka, -5, -19 + wave, 2, 6); F(C.parka, 3, -19 - wave, 2, 6); F(C.skin, -5, -20 + wave, 2, 1); F(C.skin, 3, -20 - wave, 2, 1);
+      ctx.restore();
+    };
+    if (o.st === 'chill') { // lounging: leaning back, legs crossed, foot tapping, cigarette in hand
+      const tap = Math.floor(t * 4) % 2;
+      F(C.pants, sx - 1, GY - 9, 6, 2); F(C.pants, sx - 1, GY - 8, 2, 5); F(C.boot, sx - 2, GY - 3, 3, 2); // lower leg down
+      F(C.pants, sx, GY - 11, 5, 2); F(C.boot, sx - 2, GY - 12 - tap, 3, 2);                           // crossed leg, tapping
+      F(C.parka, sx + 4, GY - 15, 5, 7); F(C.parkaD, sx + 7, GY - 15, 2, 7); F(C.fur, sx + 3, GY - 16, 5, 1);
+      F(C.skin, sx + 3, GY - 19, 4, 3); F(C.shades, sx + 3, GY - 18, 3, 1);
+      F(C.hat, sx + 3, GY - 21, 4, 2); F('#ffffff', sx + 4, GY - 22, 2, 1);
+      F(C.parka, sx + 2, GY - 14, 2, 3); F(C.skin, sx + 1, GY - 15, 2, 1);                            // arm, hand at the mouth
+      F('#ffffff', sx - 1, GY - 15, 2, 1); F(Math.sin(t * 7) > 0 ? '#ff8a1a' : '#d04a10', sx - 2, GY - 15); // cigarette, glowing tip
+    } else if (o.st === 'shock') { // leaps straight up out of the chair
+      const hop = Math.sin(Math.min(1, k / SHOCK) * Math.PI) * 8;
+      guy(sx + 4, GY - hop, 1, { wave: Math.floor(t * 30) % 2, askew: true, scream: true });
+    } else if (o.st === 'run') { // sprinting for the door, legs a blur
+      const px = sx + 4 + 20 * ease((k - SHOCK) / (RUN - SHOCK));
+      guy(px, GY - (Math.floor(t * 20) % 2), -1, { legs: Math.floor(t * 20) % 2 ? 1 : -1, wave: Math.floor(t * 24) % 2 * 2 - 1, askew: true, scream: true });
+    } else if (o.st === 'dive') { // head-first into the doorway
+      const q = (k - RUN) / (DIVE - RUN);
+      guy(sx + 24 + q * 6, GY - 4 - Math.sin(q * Math.PI) * 5, -1, { rot: -1.4, s: 1 - q * .6 });
+    }
+    // the hat that flew off, the dropped cigarette, smoke
+    if (o.hat) { const h = o.hat; ctx.save(); ctx.translate(sx + h.x, GY + h.y); ctx.rotate(h.rot); F(C.hat, -2, -2, 4, 2); F('#ffffff', -1, -3, 2, 1); ctx.restore(); }
+    if (o.butt) { F('#ffffff', sx + o.butt.x, GY - 2, 2, 1); F(Math.sin(t * 5) > 0 ? '#ff8a1a' : '#a03a10', sx + o.butt.x - 1, GY - 2); }
+    ctx.lineWidth = 1;
+    for (const s of o.puffs) { ctx.strokeStyle = `rgba(232,238,246,${s.a})`; ctx.beginPath(); ctx.arc(sx + s.x, GY + s.y, s.r, 0, Math.PI * 2); ctx.stroke(); }
+  };
+
   // Potholes (rain-filled) and painted speed humps: flush with the road, cost a quarter heart if you run over them.
   G.addRoadHazard = function (x) {
     const pot = R() < .6, w = pot ? 16 + (R() * 10 | 0) : 24;
@@ -293,6 +413,7 @@
       case 'mine': return { x: o.x - 5, y: o.y - 5, w: 10, h: 10 };
       case 'proj': return { x: o.x - o.r + 1, y: o.y - o.r + 1, w: o.r * 2 - 2, h: o.r * 2 - 2 };
       case 'shock': return { x: o.x, y: this.GY - o.h, w: o.w, h: o.h };
+      case 'critter': return { x: o.x + 2, y: o.y + 2, w: o.w - 4, h: o.h - 2 };
       case 'vehicle': return { x: o.x + 2, y: o.y + 3, w: o.w - 4, h: o.h - 3 }; // roof stays clear so lorries are rideable
       case 'pothole': return { x: o.x + 3, y: this.GY - 2, w: o.w - 6, h: 3 }; // only feet on the road touch these
       case 'hump': return { x: o.x + 2, y: this.GY - 4, w: o.w - 4, h: 4 };
@@ -325,6 +446,10 @@
           if (o.phase) o.alpha = .5 + .5 * Math.sin(o.t * 2.4 + o.ph);
           break;
         case 'mine': o.y = o.by + Math.sin(o.t * 2) * 4; break;
+        case 'igloo': this.iglooUpdate(o, dt); break;
+        case 'critter': // mammoth and bear footsteps shake the ground
+          if (o.sub === 'mammoth' || o.sub === 'bear') { const st = Math.floor(o.t * o.rate * 2); if (st !== o.step) { o.step = st; if (o.x < this.W && o.x > -o.w) this.shake = Math.max(this.shake, o.sub === 'bear' ? .7 : 1.2); } }
+          break;
         case 'vehicle': // autos surge and brake; lorries hold their pace relative to the run
           if (o.sub === 'auto') o.vx = o.vx0 + Math.sin(o.t * 1.7) * 18;
           if (o.same) o.vx = -this.speed * TRUCK_PACE;
@@ -576,6 +701,16 @@
           ctx.fillStyle = '#16141a'; ctx.fillRect(x + 3, GY - 4, o.w - 6, 1); ctx.fillRect(x + 1, GY - 3, o.w - 2, 3);
           ctx.fillStyle = '#e8c23a'; for (let i = 2; i < o.w - 2; i += 6) { ctx.fillRect(x + i + 1, GY - 3, 3, 3); ctx.fillRect(x + i + 2, GY - 4, 2, 1); }
           ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(x, GY, o.w, 1);
+          break;
+        }
+        case 'igloo': this.drawIgloo(ctx, o); break;
+        case 'critter': {
+          const f = o.frames[Math.floor(o.t * o.rate) % 2];
+          ctx.fillStyle = 'rgba(20,40,70,.22)'; ctx.fillRect(x + 1, GY - 1, o.w - 2, 2);
+          if (o.sub === 'penguin') { // waddle: rock side to side on the feet
+            ctx.save(); ctx.translate(x + o.w / 2, GY); if (o.same) ctx.scale(-1, 1); ctx.rotate(Math.sin(o.t * o.rate * Math.PI) * .14);
+            ctx.drawImage(f, -o.w / 2, -o.h); ctx.restore();
+          } else ctx.drawImage(f, x, y);
           break;
         }
         case 'vehicle': {
