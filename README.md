@@ -1,6 +1,22 @@
+<p align="center">
+  <img src="icons/icon128.png" alt="Dino Odyssey logo" width="128" height="128">
+</p>
+
 # Dino Odyssey — the offline dino game, reimagined
 
 A Chrome side-panel extension: 11 cinematic worlds, 3 bosses, procedural chiptune music. No network needed.
+
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/onboarding/1-welcome.png" alt="Welcome screen with an egg about to hatch" width="200">
+  <img src="docs/screenshots/onboarding/5-training.png" alt="Training run in World 1" width="200">
+  <img src="docs/screenshots/frozen-aurora/scene.png" alt="Frozen Aurora world" width="200">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/dances/five-dances.png" alt="The five victory dances after clearing a world" width="720">
+</p>
 
 ## Install
 1. Install the build tools and generate the extension: `npm install && npm run build`.
