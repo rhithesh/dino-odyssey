@@ -17,6 +17,7 @@ Dino Odyssey is a Chrome Manifest V3 side-panel extension. It is a vanilla DOM-a
 | `src/js/levels.ts` | World configuration: modes, palettes, pacing, twists, and bosses. |
 | `src/js/dinos.ts` | Dinosaur roster, stats, unlock requirements, and power ratings. |
 | `src/js/upgrades.ts` | Power-bar stats, costs, bonuses, and calculations. |
+| `src/js/dances.ts` | Victory dances: each turns the beat count into a pose built from the species' existing frames. Played by `Game` after a world is cleared. |
 | `src/js/backgrounds.ts` | Procedural world scenery, ground, parallax layers, and world-card thumbnails. |
 | `src/js/fx.ts` | Weather, particles, floating text, darkness, flashes, and other effects. |
 | `src/js/game.ts` | Core game loop, player state/physics, phases, camera, rendering, and lifecycle. |
@@ -30,7 +31,7 @@ Dino Odyssey is a Chrome Manifest V3 side-panel extension. It is a vanilla DOM-a
 The game scripts are emitted as **classic scripts**, not ES modules. They share a browser-global `DR` object. `src/globals.d.ts` declares that global for TypeScript; `sprites.ts` initializes it at runtime. Keep the script order in `sidepanel.html` intact:
 
 1. `sprites` and `audio` provide foundational services.
-2. `levels`, `dinos`, and `upgrades` register game data and calculations.
+2. `levels`, `dinos`, `upgrades`, and `dances` register game data and calculations.
 3. `backgrounds` and `fx` provide rendering systems.
 4. `game` defines `DR.Game`.
 5. `entities` augments `DR.Game.prototype` with gameplay systems.

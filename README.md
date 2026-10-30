@@ -39,6 +39,9 @@ Space / ↑ / tap: jump (hold for higher) · ↓: duck / fast-fall · P / Esc: p
 
 19 playable species (Compsognathus to T-Rex), each with its own pixel art and its own strengths. Every species shares the same hitbox, so skins never change difficulty; only the starting bars do. You unlock them by clearing worlds and earning ★. Equip one from **DINO DEX** on the title screen or the worlds screen. The design is described in `DINO_DESIGN_PLAN.md`; the data is in `src/js/dinos.ts`.
 
+## Victory dances
+Clearing a world ends with a 3-second dino dance under a spotlight, in time with the world's music: **Stomp Hop**, **Moonwalk**, **Spin**, **Duck & Pop** or **Shimmy**, picked at random. Every species can do every dance. The moves are built from each species' existing frames (see `src/js/dances.ts`), so new species dance with no extra art.
+
 ## Coins and power bars
 
 Coins you collect are banked even if you crash, and a cleared world pays a bonus. Tap **DINO UPGRADES** on the title (or any dino in the Dino Dex) to open that dino's page: watch it spin in 3D, equip it, and fill its 4 power meters (10 bars each): **Jump**, **Toughness** (+1 heart at 5 and 10 bars), **Agility** (Double Jump at 5 bars) and **Dash** (Shift, D or →). Every dino starts with its own bars; later dinos start fuller. Each coin purchase adds one bar, and each next bar costs a bit more.
