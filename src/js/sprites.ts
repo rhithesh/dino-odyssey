@@ -486,6 +486,8 @@ window.DR = window.DR || {};
       return Object.assign({}, this.level(L), { dino: d.dino, dinoHurt: d.hurt });
     },
     dinoOf,
+    // Drop a cached species after its colors change (the player's own dino).
+    forget(id) { delete dinoCache[id]; },
     level(L) {
       if (cache[L.id]) return cache[L.id];
       const P = L.palette;

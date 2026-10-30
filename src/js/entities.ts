@@ -201,6 +201,89 @@
   G.addCoinLine = function (x, y, n, dx = 14) { for (let i = 0; i < n; i++) this.coins.push({ x: x + i * dx, y: y - 3, t: i * .2 }); this.coinsSpawned += n; };
   G.addCoinWave = function (x, y, n) { for (let i = 0; i < n; i++) this.coins.push({ x: x + i * 13, y: y + Math.sin(i * .9) * 16, t: i * .2 }); this.coinsSpawned += n; };
 
+  // ---------------- training run (first play of World 1) ----------------
+  // One obstacle per beat. When it gets close (`at` px ahead of the dino) the world freezes on a prompt
+  // until the player does the move, then plays on. Hits cost nothing and repeat the beat.
+  // Prompts are [keyboard, touch]; kid prompts use simpler words.
+  const TUT = [
+    { size: 'S', at: 22, want: 'jump', say: ['TAP SPACE TO JUMP', 'TAP ▲ TO JUMP'], kid: ['JUMP! TAP SPACE', 'JUMP! TAP ▲'], sub: 'A QUICK TAP IS A SMALL HOP' },
+    { size: 'L', at: 30, want: 'jump', full: true, say: ['HOLD SPACE TO JUMP HIGH', 'HOLD ▲ TO JUMP HIGH'], kid: ['BIG JUMP! HOLD SPACE', 'BIG JUMP! HOLD ▲'], sub: 'KEEP HOLDING FOR A BIG JUMP' },
+    { size: 'S', at: 22, want: 'jump', coins: true, say: ['GRAB THE COINS!', 'GRAB THE COINS!'], kid: ['JUMP FOR THE COINS!', 'JUMP FOR THE COINS!'], sub: 'COINS FOLLOW YOUR JUMP' },
+    { flyer: true, at: 26, want: 'duck', say: ['HOLD ↓ TO DUCK', 'HOLD ▼ TO DUCK'], kid: ['DUCK! HOLD ↓', 'DUCK! HOLD ▼'], sub: 'STAY LOW UNDER FLYERS' },
+    { size: 'L', at: 30, want: 'jump', slam: true, say: ['JUMP!', 'JUMP!'], kid: ['JUMP!', 'JUMP!'], sub: '' },
+  ];
+  const SLAM = { want: 'duck', say: ['PRESS ↓ TO DROP FAST', 'PRESS ▼ TO DROP FAST'], kid: ['COME DOWN! PRESS ↓', 'COME DOWN! PRESS ▼'], sub: 'SLAM DOWN TO LAND SOONER' };
+
+  G.tutUpdate = function (dt) {
+    const T = this.tut, p = this.p, B = TUT[T.i];
+    T.t += dt;
+    const acted = q => q.want === 'duck' ? this.keys.duck : p.jt >= 0 || !p.onGround;
+    const hold = q => { this.freeze = true; T.prompt = q; T.st = 'wait'; T.q = q; };
+    switch (T.st) {
+      case 'lead': // a short breather, then the beat's obstacle
+        if (T.t < .5) return;
+        T.miss = false; T.rise = 0; T.st = 'come';
+        if (B.flyer) { this.addFlyer(this.W + 20, 'mid'); T.o = this.obs[this.obs.length - 1]; T.o.vx = 0; }
+        else T.o = this.addGround(this.W + 20, B.size);
+        if (B.coins) this.addCoinArc(T.o.x + T.o.w / 2, 'hop', 5);
+        return;
+      case 'come': {
+        const hb = this.hitbox(T.o), pb = this.playerBox();
+        if (hb.x - (pb.x + pb.w) > B.at) return;
+        if (acted(B)) { T.st = 'pass'; return; } // already on it: no need to stop the world
+        hold(B);
+        return;
+      }
+      case 'wait': // frozen: only input counts; the buffered jump plays out once time runs again
+        if (T.q.want !== 'jump') p.buf = 0; // the duck prompts wait for ↓ only
+        if (!(T.q.want === 'duck' ? this.keys.duck : this.keys.jump || p.buf > 0)) return;
+        this.freeze = false; T.prompt = null; T.note = '';
+        T.st = T.q === SLAM ? 'land' : 'pass';
+        return;
+      case 'pass': {
+        T.rise = Math.max(T.rise, this.GY - p.y);
+        const cleared = T.o.x + T.o.w < p.x + 4;
+        if (B.slam && cleared && !p.onGround && !T.miss && p.vy > -60) { hold(SLAM); return; }
+        if (cleared && p.onGround) this.tutBeatDone();
+        return;
+      }
+      case 'land': if (p.onGround) this.tutBeatDone(); return;
+      case 'done': if (T.t > .8) this.endTutorial(false); return;
+    }
+  };
+  G.tutBeatDone = function () {
+    const T = this.tut, B = TUT[T.i], p = this.p;
+    T.prompt = null; T.t = 0;
+    const short = B.full && !T.miss && T.rise < this.jump().hop + 6;
+    if (T.miss || short) { // same beat again
+      T.note = short ? 'HOLD IT LONGER!' : "LET'S TRY THAT AGAIN";
+      T.st = 'lead';
+      return;
+    }
+    T.note = '';
+    this.fx.text(p.x + 10, p.y - 34, pick(['NICE', 'GREAT', 'AWESOME']) + `, ${T.name}!`, this.L.palette.accent, 8, 1);
+    DR.Audio.sfx('star');
+    T.i++;
+    T.st = T.i < TUT.length ? 'lead' : 'done';
+  };
+  G.endTutorial = function (skipped) {
+    if (!this.tut) return;
+    this.tut = null; this.freeze = false;
+    this.nextSpawn = this.L.speed[0] * 1.2;
+    if (!skipped) this.showBanner("YOU'RE READY!", 'RUN TO THE ⚑ FINISH', this.L.palette.accent);
+    this.hooks.tutorial && this.hooks.tutorial();
+  };
+  G.drawTutorial = function (ctx) {
+    const T = this.tut, q = T.prompt;
+    if (!q || this.phase !== 'play') return;
+    const W = this.W, y = this.H * .3, P = this.L.palette, k = this.touch ? 1 : 0;
+    const main = (T.kid ? q.kid : q.say)[k], sub = T.note || q.sub;
+    ctx.fillStyle = 'rgba(0,0,0,.62)'; ctx.fillRect(0, y - 16, W, sub ? 36 : 26);
+    ctx.fillStyle = P.accent; ctx.fillRect(0, y - 16, W, 2); ctx.fillRect(0, y + (sub ? 18 : 8), W, 2);
+    this.text(ctx, main, W / 2, y - 3, 12, P.accent, { alpha: this.freeze ? .7 + .3 * Math.sin(this.time * 8) : 1, spacing: 1 });
+    if (sub) this.text(ctx, sub, W / 2, y + 11, 7, '#fff', { spacing: 1 });
+  };
+
   // ---------------- collisions ----------------
   G.hitbox = function (o) {
     switch (o.kind) {

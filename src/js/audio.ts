@@ -161,6 +161,7 @@
         case 'bump': noise(sfxBus, t, .12, { vol: .25, lp: 500 }); tone(sfxBus, t, 140, .12, { type: 'square', vol: .1, slide: .6 }); break;
         case 'horn': [0, .13].forEach(d => tone(sfxBus, t + d, 740, .1, { type: 'square', vol: .07, filter: 2200 })); break; // auto / scooter
         case 'honk': tone(sfxBus, t, 330, .32, { type: 'sawtooth', vol: .08, filter: 1400 }); tone(sfxBus, t, 415, .32, { type: 'sawtooth', vol: .06, filter: 1400 }); break; // car / lorry
+        case 'crack': noise(sfxBus, t, .06, { vol: .32, hp: 1800 }); tone(sfxBus, t, 1900, .03, { type: 'square', vol: .06, slide: .6 }); break; // eggshell
         case 'click': tone(sfxBus, t, 1200, .04, { vol: .08 }); break;
       }
     },
