@@ -16,6 +16,9 @@ A Chrome side-panel extension: 11 cinematic worlds, 3 bosses, procedural chiptun
 - Run `npm run typecheck` to check the TypeScript sources and `npm run build` to generate `dist/`.
 - Keep loading `dist/` as the unpacked extension; the build output is generated and ignored by git.
 
+## First launch
+A new player hatches their own dino: they type their name, pick an age group (or skip), and the egg hatches into a dino named after them (Hithesh → **HITHSAURUS**). They choose its color, can rename it, and it becomes their starter. Their first run of World 1 opens with a short training run (hop, full jump, coins, duck, fast-fall) where the world pauses on each prompt and hits cost no hearts. The age group only changes the prompt wording and makes the touch pads bigger for under-8s. Players with existing saves hatch a dino once but skip the training; **HOW TO → REPLAY TRAINING** runs it again.
+
 ## Controls
 Space / ↑ / tap: jump (hold for higher) · ↓: duck / fast-fall · P / Esc: pause · M: mute
 

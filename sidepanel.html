@@ -44,6 +44,7 @@
       <div class="h-[9px] overflow-hidden rounded-[3px] bg-black/60 border border-[#ff5470]"><div id="bossFill" class="h-full w-full bg-gradient-to-r from-[#ff0033] to-[#ff7a45] transition-[width] duration-300 shadow-[0_0_12px_#ff0033]"></div></div>
     </div>
     <div id="boostRow" class="absolute left-[14px] top-[92px] text-[10px] font-extrabold tracking-[1px] text-white [text-shadow:0_1px_0_#000]"></div>
+    <button id="tutSkip" class="hidden pointer-events-auto absolute left-1/2 top-[64px] -translate-x-1/2 rounded-full px-3 py-1 text-[10px] font-extrabold tracking-[2px] bg-black/45 border border-white/25 backdrop-blur-[4px] hover:bg-white/15">SKIP TRAINING ▸</button>
     <div id="combo" class="absolute right-[14px] top-[92px] text-right text-[15px] font-black text-[var(--accent)] opacity-0 transition-opacity duration-200 [text-shadow:0_2px_0_#000,0_0_10px_rgba(255,207,74,.6)]"></div>
   </div>
 
@@ -59,7 +60,7 @@
     <div class="absolute top-[14px] flex items-center gap-[6px] rounded-full px-[10px] py-[5px] text-[10px] tracking-wide bg-black/40 border border-white/20" id="netChip"><span class="h-[7px] w-[7px] rounded-full bg-[#4ade80] shadow-[0_0_8px_#4ade80]"></span><span id="netText">No internet? No problem.</span></div>
     <div class="-mt-[30px]">
       <div class="text-[11px] tracking-[6px] text-[var(--dim)]">NO INTERNET</div>
-      <div class="my-2 text-[46px] leading-[.95] font-black tracking-[3px] bg-gradient-to-b from-[#fff6d5] via-[#ffcf4a] to-[#ff6b3d] bg-clip-text text-transparent [filter:drop-shadow(0_4px_0_#3a1408)_drop-shadow(0_0_22px_rgba(255,140,60,.45))] animate-[logoFloat_3s_ease-in-out_infinite]">DINO<br>ODYSSEY</div>
+      <div class="my-2 text-[46px] leading-[.95] font-black tracking-[3px] animate-[logoFloat_3s_ease-in-out_infinite]"><span class="inline-block bg-gradient-to-b from-[#fff6d5] via-[#ffcf4a] to-[#ff6b3d] bg-clip-text text-transparent [filter:drop-shadow(0_4px_0_#3a1408)_drop-shadow(0_0_22px_rgba(255,140,60,.45))]">DINO</span><br><span class="inline-block -mt-[14px] px-[10px] pt-[4px] pb-[10px] text-[52px] leading-[1.15] font-bold tracking-[1px] text-[#ff3b5c] [-webkit-text-fill-color:#ff3b5c] [text-shadow:0_3px_0_#4a0010] font-['Priestacy','Snell_Roundhand','Brush_Script_MT',cursive]">Odyssey</span></div>
       <div class="my-1 text-[34px] font-black leading-none bg-gradient-to-b from-[#7df9ff] to-[#2a9dff] bg-clip-text text-transparent [filter:drop-shadow(0_2px_0_#0b4a7a)_drop-shadow(0_0_12px_rgba(125,249,255,.45))]" aria-label="infinity">∞</div>
     </div>
     <div class="flex w-[min(260px,85%)] flex-col gap-[10px]">
@@ -77,6 +78,15 @@
       </div>
     </div>
     <div class="absolute bottom-[18px] text-[11px] text-[var(--dim)] animate-[blink_1.6s_steps(2)_infinite]">Click here first, then press <kbd class="inline-block rounded px-[6px] py-px text-[.85em] bg-white/10 border border-white/25 border-b-[3px]">SPACE</kbd></div>
+  </section>
+
+  <!-- Onboarding: name -> age -> the egg hatches into your own dino. Steps are filled in by ui.js. -->
+  <section id="scrHatch" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-center gap-4 p-5 text-center animate-[screenIn_.35s_ease-out]">
+    <div class="relative flex h-[180px] w-[240px] items-end justify-center">
+      <div class="absolute bottom-0 left-1/2 h-[50px] w-[200px] -translate-x-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(255,207,74,.35),transparent_70%)]"></div>
+      <canvas id="hatchCanvas" class="relative block h-[180px] w-[240px] [image-rendering:pixelated]" width="80" height="60"></canvas>
+    </div>
+    <div id="hatchStep" class="flex w-[min(280px,90%)] flex-col items-center gap-3"></div>
   </section>
 
   <section id="scrLevels" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-start gap-[18px] px-0 pt-[60px] pb-4 text-center overflow-y-auto animate-[screenIn_.35s_ease-out]">
@@ -134,6 +144,7 @@
       <p>★ Clear the world &nbsp;★★ Grab 70% of coins &nbsp;★★★ Take no damage</p>
       <p class="text-[var(--dim)]">Every world bends the rules. Watch the twist banner.</p>
     </div>
+    <button class="w-full max-w-[400px] cursor-pointer rounded-xl px-[14px] py-[11px] text-xs font-extrabold tracking-[2px] bg-[rgba(20,16,32,.6)] border border-white/20 backdrop-blur-md shadow-[0_4px_0_rgba(0,0,0,.5)] hover:bg-white/15 active:translate-y-[3px]" id="btnTraining">↻ REPLAY TRAINING</button>
   </section>
 
   <section id="scrPause" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-center gap-[18px] p-5 text-center animate-[screenIn_.35s_ease-out] bg-[radial-gradient(ellipse_at_center,rgba(10,8,18,.72),rgba(5,4,10,.92))] backdrop-blur-[3px]">

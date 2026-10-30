@@ -143,7 +143,7 @@
     }
 
     // ---------------- level lifecycle ----------------
-    load(L, { demo = false, quick = false, dino = 'compy', up = null } = {}) {
+    load(L, { demo = false, quick = false, dino = 'compy', up = null, tutorial = null } = {}) {
       if (L.endless) L = DR.endlessLevel(0);
       this.L = L; this.demo = demo; this.dinoId = dino; this.S = DR.Sprites.forLevel(L, dino);
       const D = DR.DINOS.find(d => d.id === dino) || DR.DINOS[0];
@@ -166,6 +166,9 @@
       this.p = { x: demo ? 50 : -40, y: this.GY, vy: 0, g: 1, onGround: true, duck: false, inv: 0, coyote: 0, buf: 0, hold: 0, rot: 0, dead: false, air: this.st.air, airT: 0, dash: 0, dashCd: 0, jt: -1, y0: 0, cut: true, sq: 0 };
       this.phase = demo ? 'demo' : 'intro';
       this.phaseT = quick ? 1.8 : 0;
+      // Training run (see entities.js): scripted obstacles instead of random spawns, then normal play.
+      this.tut = tutorial && !demo ? Object.assign({ i: 0, st: 'lead', t: -1.2, o: null, prompt: null, note: '', miss: false, rise: 0 }, tutorial) : null;
+      this.freeze = false;
       this.paused = false; this.ended = false;
       DR.Audio.playMusic(L.music);
     }
@@ -232,6 +235,7 @@
       if (this.L && !this.paused) {
         this.time += dt;
         if (this.hitstop > 0) this.hitstop -= dt;
+        else if (this.freeze) this.tutUpdate(0); // training prompt: the world holds still until the move
         else { this.slow += (1 - this.slow) * Math.min(1, dt * 2); this.update(dt * this.slow, dt); }
       }
       if (this.L) this.render();
@@ -268,16 +272,21 @@
           this.zoom = lerp(1.35, 1, ease(this.phaseT / 2.4));
           p.x = lerp(-40, 50, ease((this.phaseT - .6) / 1.6));
           [2.0, 2.5, 3.0].forEach(t => { if (this.phaseT >= t && this.phaseT - realDt < t) DR.Audio.sfx('count'); });
-          if (this.phaseT >= 3.5) { DR.Audio.sfx('go'); this.setPhase('play'); this.showBanner(L.twist.split('—')[0].trim(), L.twist.split('—')[1]?.trim() || '', L.palette.accent); }
+          if (this.phaseT >= 3.5) {
+            DR.Audio.sfx('go'); this.setPhase('play');
+            if (this.tut) this.showBanner('TRAINING', `LET'S GO, ${this.tut.name}!`, L.palette.accent);
+            else this.showBanner(L.twist.split('—')[0].trim(), L.twist.split('—')[1]?.trim() || '', L.palette.accent);
+          }
           break;
         }
         case 'play': {
           this.runTime += dt;
-          const dm = this.speed * dt / 10; this.dist += dm; this.score += dm * this.mult();
+          const dm = this.speed * dt / 10; this.score += dm * this.mult();
+          if (!this.tut) this.dist += dm; // the world's distance starts after training
           if (L.mode === 'mix') this.mixUpdate(prog);
           if (this.endless) this.endlessUpdate();
           if (!this.finishing) {
-            this.spawnUpdate(dt);
+            if (this.tut) this.tutUpdate(dt); else this.spawnUpdate(dt);
             if (this.dist >= L.goal && !L.endless) {
               this.finishing = true;
               if (L.boss) { this.setPhase('bossIntro'); }
@@ -433,6 +442,11 @@
     damage(src) {
       const p = this.p, chip = CHIP[src]; // road hazards only chip off part of a heart
       if (p.inv > 0 || p.dead || this.demo || this.phase === 'win' || this.phase === 'intro') return false;
+      if (this.tut) { // training: no hearts lost, no hit on the record; the beat repeats
+        this.tut.miss = true; p.inv = .8; this.shake = 4; this.penalty = .9;
+        this.fx.text(p.x + 10, p.y - 30 * p.g, 'OOPS!', '#ff8a9a', 9); DR.Audio.sfx('bump');
+        return true;
+      }
       if (this.shieldN > 0) {
         this.shieldN--; this.shieldHit = true; p.inv = .8;
         this.fx.ring(p.x + 10, p.y - 10 * p.g, '#7df9ff', 26, .35);
@@ -649,6 +663,7 @@
       this.drawLetterbox(ctx);
       if (this.phase === 'intro') this.drawIntro(ctx);
       if (this.banner) this.drawBanner(ctx);
+      else if (this.tut) this.drawTutorial(ctx);
       if (this.phase === 'win') this.drawWinCard(ctx);
     }
 

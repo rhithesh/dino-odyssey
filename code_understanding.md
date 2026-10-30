@@ -41,9 +41,11 @@ At startup, the UI loads local save data, renders the title screen, and starts a
 ## Save data and progression
 
 - Game progress is stored in local storage under `dr_save`; the sound preference uses `dr_muted`.
+- `dr_save.profile` (`{ name, dino, color, age }`) is set by the hatch screens in `ui.ts`, and the player's own dino (`id: 'mine'` in `dinos.ts`) takes its name and colors from it via `DR.setMyDino`. `dr_save.seen.tutorial` records that the World 1 training run (`tutUpdate` in `entities.ts`) is done. Saves from before onboarding are marked as already trained.
 - World definitions are in `src/js/levels.ts`. The UI currently looks up a world with `LEVELS[id - 1]`, so keep IDs in array order.
 - Dinosaur definitions and unlock rules are in `src/js/dinos.ts`; power-bar math is in `src/js/upgrades.ts`.
 - `UNLOCK_ALL` in `src/js/ui.ts` is a development switch that currently makes every world playable. Set it to `false` to restore progression-based locks.
+- `FORCE_ONBOARDING` in `src/js/ui.ts` is a development switch for testing the first launch: when `true`, every launch shows the hatch screens and runs the World 1 training once, without clearing progress. Set it to `false` for production.
 
 ## Styling
 

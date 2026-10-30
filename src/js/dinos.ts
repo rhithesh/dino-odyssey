@@ -12,6 +12,41 @@ DR.DINO_BASE = {
 
 DR.DINOS = [
   {
+    // The player's own dino, hatched during onboarding. Name and colors come from save.profile (DR.setMyDino).
+    // Stock stats and Compy's starting bars, so it plays exactly like the starter.
+    id: 'mine', name: 'YOUR DINO', short: 'YOUR DINO', era: 'Hatched today', mine: true,
+    unlock: { start: true }, stats: {},
+    colors: { '#': '#5fd39a', d: '#2f8a5e', b: '#d9f7e6', c: '#ffcf4a', o: '#10141a', w: '#fff8e0' },
+    lx: 5, ox: 0,
+    body: [
+      '            c c c    ',
+      '            #####    ',
+      '           ##o####   ',
+      '           #######   ',
+      '           #####bb   ',
+      '           ####b     ',
+      '         c####b      ',
+      '         c####b      ',
+      '#       c#####b      ',
+      '#      d######b#     ',
+      '##   d#d#####bb #    ',
+      '###d#d#d####bb       ',
+      ' ######d####bb       ',
+      '   #########b        ',
+      '    #######b         ',
+      '     ######          ',
+    ],
+    duck: [
+      '                     c c c',
+      '                    ##### ',
+      '#        ##########o######',
+      '##   d#d##################',
+      '####d#d##############bb   ',
+      ' ##################b      ',
+      '  #####bbbbbbb##          ',
+    ],
+  },
+  {
     id: 'compy', name: 'COMPSOGNATHUS', short: 'COMPY', era: 'Late Jurassic',
     unlock: { start: true }, classic: true, stats: {},
   },
@@ -622,6 +657,38 @@ DR.dinoUnlocked = function (D, save) {
 DR.dinoHint = function (D) {
   const u = D.unlock;
   return u.world ? `CLEAR WORLD ${u.world}` : u.stars ? `EARN ${u.stars} ★` : u.allStars ? '3★ EVERY WORLD' : '';
+};
+
+// ---------------- your own dino ----------------
+DR.DINO_SUFFIX = 'SAURUS';
+DR.MY_COLORS = [
+  { name: 'MINT', '#': '#5fd39a', d: '#2f8a5e', b: '#d9f7e6', c: '#ffcf4a' },
+  { name: 'SKY', '#': '#5aa8ff', d: '#2a5fae', b: '#d6ecff', c: '#ff6b3d' },
+  { name: 'SUNSET', '#': '#ff8a3d', d: '#b5501a', b: '#ffe0c2', c: '#7df9ff' },
+  { name: 'GRAPE', '#': '#a97cff', d: '#6a3fc4', b: '#eadcff', c: '#ffd23f' },
+  { name: 'BUBBLEGUM', '#': '#ff7ab8', d: '#c2407c', b: '#ffe2f1', c: '#7df9a8' },
+];
+// Player name -> dino name: the name up to the end of its first syllable, plus SAURUS.
+// HITHESH -> HITHSAURUS, PRIYA -> PRISAURUS, SAM -> SAMSAURUS, CHRIS -> CHRISAURUS.
+DR.dinoNameFor = function (name) {
+  const s = String(name || '').toUpperCase().replace(/[^A-Z]/g, ''), suf = DR.DINO_SUFFIX;
+  if (!s) return 'DINO' + suf;
+  const vowel = i => 'AEIOU'.includes(s[i]) || (s[i] === 'Y' && i > 0);
+  let i = 0;
+  while (i < s.length && !vowel(i)) i++;
+  const v = i;
+  while (i < s.length && vowel(i)) i++;
+  const c = i;
+  while (i < s.length && !vowel(i)) i++;
+  // no consonant after the first vowels (MIA, PRIYA): stop at the first vowel
+  const stem = s.slice(0, Math.min(6, c === i && v < s.length ? v + 1 : i));
+  return stem + (stem.endsWith(suf[0]) ? suf.slice(1) : suf);
+};
+DR.setMyDino = function (profile) {
+  const D = DR.DINOS.find(d => d.mine), p = profile || {}, C = DR.MY_COLORS[p.color | 0] || DR.MY_COLORS[0];
+  D.name = D.short = p.dino || 'YOUR DINO';
+  D.colors = { '#': C['#'], d: C.d, b: C.b, c: C.c, o: '#10141a', w: '#fff8e0' };
+  DR.Sprites.forget(D.id);
 };
 
 // ---------------- power tiers ----------------

@@ -14,6 +14,10 @@
     save.v = 2; persist();
   }
   const totalStars = () => Object.values(save.stars).reduce<number>((a, b) => a + Number(b), 0);
+  // Onboarding: save.profile = { name, dino, color, age } from the hatch screens (absent until hatched);
+  // save.seen = one-time lessons already done. Saves from before onboarding already know how to play.
+  if (!save.seen || typeof save.seen !== 'object') save.seen = save.unlocked > 1 || totalStars() > 0 ? { tutorial: true } : {};
+  if (save.profile) DR.setMyDino(save.profile);
 
   // ---------------- coins & powers ----------------
   // save.bars = { dinoId: { jump, tough, agile, dash } } = bars bought on top of the dino's starting bars.
@@ -36,6 +40,10 @@
   // DEV FLAG: every world is playable while the campaign is still being built.
   // Flip to false for production — progression then follows save.unlocked again.
   const UNLOCK_ALL = false;
+  // DEV FLAG: every launch runs the hatch screens and the World 1 training run, whatever the save says.
+  // Progress is kept. Flip to false for production.
+  const FORCE_ONBOARDING = true;
+  let trainPending = FORCE_ONBOARDING; // cleared once this session's training run ends
   // The retro world is always playable and never part of the unlock chain.
   const levelOpen = L => UNLOCK_ALL || !!L.alwaysOpen || L.id <= save.unlocked;
   const dinoById = id => DINOS.find(d => d.id === id) || DINOS[0];
@@ -147,6 +155,7 @@
     hud: updateHud,
     hurt(h) { const el = $('hearts').children[h] as HTMLElement | undefined; if (el) { el.classList.remove('animate-[heartPop_.5s]'); void el.offsetWidth; el.classList.add('animate-[heartPop_.5s]'); } },
     end: onEnd,
+    tutorial() { save.seen.tutorial = true; trainPending = false; persist(); $('tutSkip').classList.add('hidden'); },
   });
 
   function updateHud(s) {
@@ -192,11 +201,11 @@
   }
 
   // ---------------- screens ----------------
-  const SCREENS = ['scrTitle', 'scrLevels', 'scrHelp', 'scrPause', 'scrResult', 'scrOver', 'scrDex', 'scrDino'];
+  const SCREENS = ['scrTitle', 'scrHatch', 'scrLevels', 'scrHelp', 'scrPause', 'scrResult', 'scrOver', 'scrDex', 'scrDino'];
   let screen = 'scrTitle';
   // Screens with their own full-bleed blurred backdrop (they scroll, so the blur
   // lives on #veil instead of on the scrolling element).
-  const VEILED = ['scrLevels', 'scrDex', 'scrDino', 'scrShop'];
+  const VEILED = ['scrHatch', 'scrLevels', 'scrDex', 'scrDino', 'scrShop'];
   function show(id) {
     SCREENS.forEach(s => $(s).classList.toggle('hidden', s !== id));
     screen = id;
@@ -236,7 +245,10 @@
     show(null);
     $('btnDash').classList.toggle('hidden', !dashOwned());
     document.body.classList.toggle('retro', !!L.retro); document.body.classList.remove('endless');
-    game.load(L, { quick, dino: save.dino, up: barsNow(save.dino) });
+    // The first play of World 1 opens with the training run.
+    const tutorial = id === 1 && (!save.seen.tutorial || trainPending) ? { name: dinoById(save.dino).short, kid: !!save.profile && save.profile.age === 'kid' } : null;
+    $('tutSkip').classList.toggle('hidden', !tutorial);
+    game.load(L, { quick, dino: save.dino, up: barsNow(save.dino), tutorial });
   }
 
   function buildLevels() {
@@ -521,9 +533,288 @@
   }
   function resume() { game.paused = false; game.last = performance.now(); DR.Audio.resume(); show(null); }
 
+  // ---------------- onboarding: hatch your own dino ----------------
+  // welcome -> name -> age -> the egg hatches (pick a color, rename) -> training run, or the title for old saves.
+  const AGES = [{ id: 'kid', label: 'UNDER 8' }, { id: 'mid', label: '8 – 12' }, { id: 'teen', label: '13+' }];
+  const BTN_GO = 'w-full cursor-pointer rounded-xl px-[14px] py-[13px] text-sm font-extrabold tracking-[2px] bg-gradient-to-b from-[#ffd65c] to-[#ff8a3d] text-[#2a1004] border border-[#fff3c4] shadow-[0_4px_0_#8a3510,0_0_24px_rgba(255,150,60,.35)] transition-transform duration-100 hover:brightness-110 hover:-translate-y-px active:translate-y-[3px] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0';
+  const BTN_ALT = 'w-full cursor-pointer rounded-xl px-[14px] py-[13px] text-sm font-extrabold tracking-[2px] bg-[rgba(20,16,32,.6)] border border-white/20 backdrop-blur-md shadow-[0_4px_0_rgba(0,0,0,.5)] transition-[transform,background] duration-150 hover:bg-white/15 active:translate-y-[3px]';
+  const H_TITLE = 'text-[15px] font-black tracking-[3px] [text-shadow:0_2px_0_#000]', H_SUB = 'text-[11px] tracking-wide text-[var(--dim)]';
+  const hatch = { name: '', dino: '', age: null, color: 0, hatched: false };
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  function applyAge() {
+    // little hands get bigger touch pads
+    const kid = !!save.profile && save.profile.age === 'kid';
+    ['btnJump', 'btnDuck', 'btnDash'].forEach(id => { $(id).classList.toggle('h-20', kid); $(id).classList.toggle('w-20', kid); $(id).classList.toggle('h-16', !kid); $(id).classList.toggle('w-16', !kid); });
+  }
+  function openHatch() {
+    Object.assign(hatch, { name: '', dino: '', age: null, color: 0, hatched: false });
+    show('scrHatch'); startDemo(); startScene(); hatchStep('welcome');
+  }
+  function hatchStep(step) {
+    const box = $('hatchStep');
+    if (step === 'welcome') {
+      const returning = save.unlocked > 1 || totalStars() > 0;
+      box.innerHTML = `<div class="${H_TITLE}">${returning ? 'A NEW EGG APPEARED!' : 'SOMETHING IS ABOUT TO HATCH…'}</div>
+        <div class="${H_SUB}">It's your very own dinosaur.</div>
+        <button id="hatchGo" class="${BTN_GO} mt-2">TAP TO BEGIN</button>`;
+      $('hatchGo').onclick = () => { DR.Audio.init(); DR.Audio.sfx('click'); hatchStep('name'); };
+    } else if (step === 'name') {
+      box.innerHTML = `<div class="${H_TITLE}">WHAT'S YOUR NAME?</div>
+        <input id="hatchName" maxlength="12" autocomplete="off" spellcheck="false" class="w-full rounded-xl border-2 border-[var(--accent)] bg-black/60 px-3 py-2 text-center font-pixel text-[30px] uppercase leading-none tracking-[2px] text-white outline-none placeholder:text-white/25" placeholder="NAME">
+        <div class="${H_SUB} min-h-[18px]" id="hatchPreview"></div>
+        <button id="hatchGo" class="${BTN_GO}">NEXT ▶</button>`;
+      const inp = $('hatchName') as HTMLInputElement, go = $('hatchGo') as HTMLButtonElement;
+      const sync = () => {
+        inp.value = inp.value.replace(/[^A-Za-z ]/g, '');
+        hatch.name = inp.value.trim(); hatch.dino = DR.dinoNameFor(hatch.name);
+        go.disabled = !/[A-Za-z]/.test(hatch.name);
+        $('hatchPreview').innerHTML = go.disabled ? 'Letters only, up to 12.' : `Your dino will be <b class="text-[var(--accent)]">${esc(hatch.dino)}</b>`;
+      };
+      inp.value = hatch.name; sync();
+      inp.addEventListener('input', sync);
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') go.click(); });
+      go.onclick = () => { if (go.disabled) return; DR.Audio.sfx('click'); hatchStep(hatch.hatched ? 'meet' : 'age'); };
+      setTimeout(() => inp.focus(), 50);
+    } else if (step === 'rename') {
+      box.innerHTML = `<div class="${H_TITLE}">NAME YOUR DINO</div>
+        <input id="hatchName" maxlength="14" autocomplete="off" spellcheck="false" class="w-full rounded-xl border-2 border-[var(--accent)] bg-black/60 px-3 py-2 text-center font-pixel text-[30px] uppercase leading-none tracking-[2px] text-white outline-none">
+        <button id="hatchGo" class="${BTN_GO}">DONE ✓</button>`;
+      const inp = $('hatchName') as HTMLInputElement, go = $('hatchGo') as HTMLButtonElement;
+      inp.value = hatch.dino;
+      inp.addEventListener('input', () => { inp.value = inp.value.toUpperCase().replace(/[^A-Z]/g, ''); go.disabled = !inp.value; });
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') go.click(); });
+      go.onclick = () => { if (!inp.value) return; hatch.dino = inp.value; DR.Audio.sfx('click'); hatchStep('meet'); };
+      setTimeout(() => { inp.focus(); inp.select(); }, 50);
+    } else if (step === 'age') {
+      box.innerHTML = `<div class="${H_TITLE}">HOW OLD ARE YOU?</div>
+        <div class="${H_SUB}">So we explain things the right way.</div>
+        <div class="flex w-full gap-2">${AGES.map(a => `<button data-age="${a.id}" class="${BTN_ALT} whitespace-nowrap px-1 !tracking-normal">${a.label}</button>`).join('')}</div>
+        <button id="hatchSkipAge" class="cursor-pointer text-[11px] tracking-wide text-[var(--dim)] underline">skip</button>`;
+      box.querySelectorAll('[data-age]').forEach((b: HTMLElement) => b.onclick = () => { hatch.age = b.dataset.age; DR.Audio.sfx('click'); hatchOpen(); });
+      $('hatchSkipAge').onclick = () => { hatch.age = null; DR.Audio.sfx('click'); hatchOpen(); };
+    } else if (step === 'meet') {
+      DR.setMyDino({ dino: hatch.dino, color: hatch.color });
+      turnCache['mine'] = turnCache['mine:l'] = null;
+      box.innerHTML = `<div class="text-[10px] tracking-[6px] text-[var(--dim)]">MEET</div>
+        <div class="-mt-2 flex items-center gap-2"><span class="font-pixel text-[42px] leading-none tracking-[2px] text-[var(--accent)] [text-shadow:0_3px_0_#5a2a00,0_0_18px_rgba(255,207,74,.45)]">${esc(hatch.dino)}</span>
+          <button id="hatchRename" title="Rename" class="cursor-pointer rounded-lg border border-white/20 bg-black/40 px-2 py-1 text-xs hover:bg-white/15">✎</button></div>
+        <div class="${H_SUB} -mt-1">Your very own dinosaur.</div>
+        <div class="flex gap-2">${DR.MY_COLORS.map((c, i) => `<button data-color="${i}" title="${c.name}" class="h-8 w-8 cursor-pointer rounded-full border-2 transition-transform hover:scale-110 ${i === hatch.color ? 'scale-110 border-white shadow-[0_0_12px_rgba(255,255,255,.6)]' : 'border-white/20'}" style="background:${c['#']}"></button>`).join('')}</div>
+        <button id="hatchGo" class="${BTN_GO} mt-1">LET'S GO ▶</button>
+        <button id="hatchBackName" class="cursor-pointer text-[11px] tracking-wide text-[var(--dim)] underline">change my name</button>`;
+      box.querySelectorAll('[data-color]').forEach((b: HTMLElement) => b.onclick = () => { hatch.color = +b.dataset.color; DR.Audio.sfx('coin'); hatchStep('meet'); });
+      $('hatchRename').onclick = () => hatchStep('rename');
+      $('hatchBackName').onclick = () => hatchStep('name');
+      $('hatchGo').onclick = finishHatch;
+    }
+  }
+  function hatchOpen() {
+    $('hatchStep').innerHTML = `<div class="${H_TITLE} animate-[blink_.6s_steps(2)_infinite]">IT'S HATCHING!</div>`;
+    DR.setMyDino({ dino: hatch.dino, color: hatch.color });
+    scene.mode = 'hatching'; scene.t0 = performance.now(); scene.stage = 0; scene.fired = {};
+  }
+
+  // ---------------- hatch scene: an 80x60 pixel canvas drawn at 3x ----------------
+  // egg: rocks every couple of seconds · hatching: the scripted timeline below · out: the dino runs in place.
+  // Timeline (s): rocking 0-1.2, crack spreads at 1.2 / 2.4 / 3.6 while the rocking grows, light leaks through,
+  // trembling 3.6-4.4, the top pops off at 4.4, the dino rises and looks around 4.5-6.0, jumps out 6.0-6.7.
+  const SC = { W: 80, H: 60, G: 55, EW: 26, EH: 34 };
+  const HT = { c1: 1.2, c2: 2.4, c3: 3.6, pop: 4.4, rise: 4.5, look: 5.2, jump: 6.0, land: 6.7 };
+  const CRACK = [0, 2, 4, 2, 0, 1, 3, 5, 3, 1, 0, 2, 4, 2, 0, 1, 3, 4, 2, 0, 1, 3, 2, 0, 1, 2].map(v => 13 + v);
+  const scene: any = { mode: 'egg', t0: 0, raf: 0, stage: 0, parts: [], top: null, flash: 0, fired: {}, last: 0, egg: null };
+  function eggArt() {
+    if (scene.egg) return scene.egg;
+    const { EW, EH } = SC, mid = EH * .56;
+    const inside = (x, y) => {
+      if (x < 0 || x >= EW || y < 0 || y >= EH) return false;
+      const dx = (x + .5 - EW / 2) / (EW / 2), dy = (y + .5 - mid) / (y + .5 < mid ? mid : EH - mid);
+      return dx * dx + dy * dy <= 1;
+    };
+    const spots = [[8, 11, 3], [18, 20, 3.5], [9, 26, 2.5], [17, 7, 2]];
+    const color = (x, y) => {
+      if (!inside(x - 1, y) || !inside(x + 1, y) || !inside(x, y - 1) || !inside(x, y + 1)) return '#7a5a36';
+      const dx = (x + .5 - EW / 2) / (EW / 2), dy = (y + .5 - mid) / mid;
+      const spot = spots.some(([sx, sy, r]) => (x - sx) ** 2 + (y - sy) ** 2 <= r * r);
+      if (spot) return dx > .4 ? '#5fa86f' : '#7fc98f';
+      if (dx < -.3 && dy < -.35) return '#fffdf2';
+      return dx > .45 || dy > .55 ? '#d9c49a' : '#f3e6c4';
+    };
+    const half = which => {
+      const c = DR.Sprites.mk(EW, EH), g = c.getContext('2d');
+      for (let y = 0; y < EH; y++) for (let x = 0; x < EW; x++) {
+        if (!inside(x, y)) continue;
+        if (which === 'top' && y > CRACK[x] || which === 'bot' && y <= CRACK[x]) continue;
+        g.fillStyle = which === 'bot' && y === CRACK[x] + 1 ? '#7a5a36' : which === 'top' && y === CRACK[x] ? '#7a5a36' : color(x, y);
+        g.fillRect(x, y, 1, 1);
+      }
+      return c;
+    };
+    return (scene.egg = { full: half('full'), top: half('top'), bot: half('bot') });
+  }
+  function startScene() {
+    Object.assign(scene, { mode: hatch.hatched ? 'out' : 'egg', parts: [], top: null, flash: 0, last: performance.now() });
+    cancelAnimationFrame(scene.raf);
+    const tick = now => {
+      if (screen !== 'scrHatch') return;
+      const dt = Math.min(.05, (now - scene.last) / 1000); scene.last = now;
+      drawScene(now, dt);
+      scene.raf = requestAnimationFrame(tick);
+    };
+    scene.raf = requestAnimationFrame(tick);
+  }
+  function chips(x, y, n, speed, colors = ['#f3e6c4', '#fffdf2', '#d9c49a', '#7fc98f']) {
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI / 2 + (Math.random() - .5) * 2.4, v = speed * (.5 + Math.random() * .7);
+      scene.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: .7 + Math.random() * .6, c: colors[i % colors.length], s: Math.random() < .3 ? 2 : 1 });
+    }
+  }
+  function drawScene(now, dt) {
+    const c = $('hatchCanvas') as HTMLCanvasElement, g = c.getContext('2d'), { W, H, G, EW, EH } = SC;
+    const art = eggArt(), D = DR.Sprites.dinoOf('mine', { dino: '#cfc6b4', dinoEye: '#1a1418' }).dino;
+    const ease = t => 1 - Math.pow(1 - Math.max(0, Math.min(1, t)), 3);
+    g.clearRect(0, 0, W, H); g.imageSmoothingEnabled = false;
+    const ex = Math.round(W / 2 - EW / 2), ey = G - EH, rimY = ey + 13;
+    let t = (now - scene.t0) / 1000, ang = 0, jx = 0, jy = 0, quake = 0, stage = 0, glow = 0, eggA = 1;
+    let dino = null; // { img, x, bottom, front, flip }
+    const once = (k, fn) => { if (!scene.fired[k]) { scene.fired[k] = true; fn(); } };
+
+    if (scene.mode === 'egg') {
+      const k = (now / 1000) % 2.4;
+      ang = k < .6 ? Math.sin(k * 22) * .1 * (1 - k / .6) : 0;
+    } else if (scene.mode === 'hatching') {
+      // the shaking builds: rocking -> rocking and hopping -> wild hops -> out-of-control rattling
+      const R = () => Math.random() - .5;
+      if (t < HT.c1) ang = Math.sin(t * 11) * .14;
+      else if (t < HT.c2) { ang = Math.sin(t * 17) * .22 + R() * .05; jx = Math.sin(t * 17) * 1.5; jy = Math.max(0, Math.sin((t - HT.c1) * 9)) * 2; }
+      else if (t < HT.c3) { ang = Math.sin(t * 26) * .3 + R() * .1; jx = R() * 3; jy = Math.abs(Math.sin((t - HT.c2) * 13)) * 4; }
+      else if (t < HT.pop) { ang = R() * .7; jx = R() * 6; jy = Math.random() * 7; quake = 4 * (t - HT.c3) / (HT.pop - HT.c3) + 1; }
+      // knocking on the ground as it hops, faster and faster
+      if (t >= HT.c1 && t < HT.pop && now - (scene.knock || 0) > (t < HT.c2 ? 420 : t < HT.c3 ? 230 : 95)) { scene.knock = now; DR.Audio.sfx('land'); }
+      // each new crack lands like a kick from inside
+      const since = Math.min(...[HT.c1, HT.c2, HT.c3].map(c => t >= c ? t - c : 9)), kick = Math.max(0, 1 - since * 6);
+      if (t < HT.pop) { ang += kick * .3 * (Math.sin(t * 60) > 0 ? 1 : -1); jy += kick * 5; quake = Math.max(quake, kick * 3); }
+      stage = t >= HT.c3 ? 3 : t >= HT.c2 ? 2 : t >= HT.c1 ? 1 : 0;
+      glow = t < HT.c2 ? 0 : t < HT.pop ? ease((t - HT.c2) / (HT.pop - HT.c2)) : Math.max(0, 1 - (t - HT.pop) * 1.5);
+      const cracks = n => { for (let i = 0; i < n; i++) setTimeout(() => DR.Audio.sfx('crack'), i * 100); };
+      if (t >= HT.c1) once('c1', () => { cracks(1); chips(W / 2, rimY, 3, 50); });
+      if (t >= HT.c2) once('c2', () => { cracks(2); chips(W / 2 - 4, rimY, 5, 60); });
+      if (t >= HT.c3) once('c3', () => { cracks(3); chips(W / 2 + 4, rimY, 6, 70); });
+      if (t >= HT.pop) once('pop', () => {
+        scene.top = { x: ex, y: ey, vx: 38, vy: -120, rot: 0, vr: 7 };
+        chips(W / 2, rimY, 18, 110); scene.flash = 1;
+        DR.Audio.sfx('bump'); DR.Audio.sfx('heart');
+      });
+      // the dino inside the bottom shell: rises, looks left and right, then jumps out
+      if (t >= HT.rise) {
+        const img = D.stand, h = img.height - (img.ay || 0);
+        const inBottom = G + h - 12, peek = G - 10;
+        if (t < HT.jump) {
+          const bottom = Math.round(inBottom + (peek - inBottom) * ease((t - HT.rise) / .6));
+          const lt = t - HT.look, flip = lt > 0 && ((lt > .2 && lt < .5) || (lt > .9 && lt < 1.2)) ? -1 : 1;
+          if (t > HT.look + .5 && t < HT.look + .6) once('peep', () => DR.Audio.sfx('star'));
+          dino = { img, x: W / 2, bottom, front: false, flip };
+        } else {
+          const k = Math.min(1, (t - HT.jump) / (HT.land - HT.jump));
+          const bottom = Math.round(peek + (G - peek) * k - Math.sin(k * Math.PI) * 22);
+          eggA = 1 - k;
+          once('hop', () => DR.Audio.sfx('jump'));
+          dino = { img: k < 1 ? D.jump : D.stand, x: W / 2, bottom, front: true, flip: 1 };
+          if (k >= 1) {
+            scene.mode = 'out'; hatch.hatched = true;
+            chips(W / 2, G - 1, 10, 60, ['#c9b48a', '#a8916a', '#e3d3b0']);
+            DR.Audio.sfx('land'); DR.Audio.sfx('win');
+            hatchStep('meet');
+          }
+        }
+      }
+    }
+    if (scene.mode === 'out') {
+      eggA = 0;
+      const f = Math.floor(now / 120) % 4;
+      dino = { img: D.run[f], x: W / 2, bottom: G, front: true, flip: 1 };
+    }
+
+    c.style.transform = quake > 0 ? `translate(${Math.round((Math.random() - .5) * 2 * quake)}px, ${Math.round((Math.random() - .5) * 2 * quake)}px)` : '';
+
+    // light rays fanning out of the crack
+    if (glow > 0) {
+      g.save();
+      for (let i = 0; i < 7; i++) {
+        const a = -Math.PI / 2 + (i - 3) * .32 + Math.sin(now / 300 + i) * .05, L = 40 * glow;
+        const ray = g.createLinearGradient(W / 2, rimY, W / 2 + Math.cos(a) * L, rimY + Math.sin(a) * L);
+        ray.addColorStop(0, `rgba(255,240,170,${.75 * glow})`); ray.addColorStop(1, 'rgba(255,220,120,0)');
+        g.globalAlpha = .7 + .3 * Math.sin(now / 90 + i * 2);
+        g.fillStyle = ray;
+        g.beginPath(); g.moveTo(W / 2, rimY); g.lineTo(W / 2 + Math.cos(a - .07) * L, rimY + Math.sin(a - .07) * L); g.lineTo(W / 2 + Math.cos(a + .07) * L, rimY + Math.sin(a + .07) * L); g.fill();
+      }
+      g.restore();
+    }
+    // shadow under whatever stands on the ground
+    g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(W / 2 - 11, G, 22, 2);
+
+    const drawDino = () => {
+      if (!dino) return;
+      const img = dino.img, top = dino.bottom - img.height + (img.ay || 0), mid = Math.round(EH * .56);
+      g.save();
+      if (!dino.front) { // still inside: only what shows above the rim or within the bottom shell
+        g.beginPath(); g.rect(0, 0, W, rimY + 1); g.rect(ex, rimY, EW, ey + mid - rimY);
+        g.ellipse(W / 2, ey + mid, EW / 2, EH - mid, 0, 0, Math.PI); g.clip();
+      }
+      g.translate(Math.round(dino.x), 0); g.scale(dino.flip, 1);
+      g.drawImage(img, -Math.round(img.width / 2), top); g.restore();
+    };
+    if (dino && !dino.front) drawDino();
+    if (eggA > 0) {
+      g.save(); g.globalAlpha = eggA;
+      g.translate(W / 2 + Math.round(jx), G - Math.round(jy)); g.rotate(ang); g.translate(-W / 2, -G);
+      if (!scene.top && scene.mode !== 'out') {
+        g.drawImage(art.full, ex, ey);
+        // the crack spreads from the middle outwards; light leaks through it
+        const reach = [0, 4, 9, 13][stage];
+        for (let x = 0; x < EW; x++) {
+          if (Math.abs(x + .5 - EW / 2) > reach) continue;
+          const y0 = CRACK[x], y1 = x + 1 < EW && Math.abs(x + 1.5 - EW / 2) <= reach ? CRACK[x + 1] : y0;
+          g.fillStyle = '#4a2e14'; g.fillRect(ex + x, ey + Math.min(y0, y1), 1, Math.abs(y1 - y0) + 1);
+          if (glow > 0) { g.globalAlpha = eggA * glow * (.6 + .4 * Math.sin(now / 70 + x)); g.fillStyle = '#fff3b0'; g.fillRect(ex + x, ey + y0, 1, 1); g.globalAlpha = eggA; }
+        }
+      } else g.drawImage(art.bot, ex, ey);
+      g.restore();
+    }
+    if (dino && dino.front) drawDino();
+    // the flying top shell
+    const T = scene.top;
+    if (T && T.y < H + 20) {
+      T.vy += 300 * dt; T.x += T.vx * dt; T.y += T.vy * dt; T.rot += T.vr * dt;
+      g.save(); g.translate(T.x + EW / 2, T.y + 10); g.rotate(T.rot); g.drawImage(art.top, -EW / 2, -10); g.restore();
+    }
+    // shell chips and dust
+    scene.parts = scene.parts.filter(p => (p.life -= dt) > 0);
+    for (const p of scene.parts) {
+      p.vy += 260 * dt; p.x += p.vx * dt; p.y += p.vy * dt;
+      if (p.y > G) { p.y = G; p.vy *= -.3; p.vx *= .6; }
+      g.globalAlpha = Math.min(1, p.life * 2); g.fillStyle = p.c; g.fillRect(Math.round(p.x), Math.round(p.y), p.s, p.s);
+    }
+    g.globalAlpha = 1;
+    if (scene.flash > 0) { // a burst of light from the opened egg
+      const r = 14 + (1 - scene.flash) * 26, fl = g.createRadialGradient(W / 2, rimY, 0, W / 2, rimY, r);
+      fl.addColorStop(0, `rgba(255,252,230,${scene.flash})`); fl.addColorStop(1, 'rgba(255,230,150,0)');
+      g.fillStyle = fl; g.fillRect(0, 0, W, H); scene.flash = Math.max(0, scene.flash - dt * 2);
+    }
+  }
+  function finishHatch() {
+    DR.Audio.sfx('click'); cancelAnimationFrame(scene.raf);
+    save.profile = { name: hatch.name, dino: hatch.dino, color: hatch.color, age: hatch.age };
+    DR.setMyDino(save.profile);
+    if (!save.dinos.includes('mine')) save.dinos.push('mine');
+    save.dino = 'mine'; persist(); applyAge();
+    if (save.seen.tutorial && !trainPending) toTitle(); else startLevel(1);
+  }
+
   // ---------------- input ----------------
   const JUMP = ['Space', 'ArrowUp', 'KeyW'], DUCK = ['ArrowDown', 'KeyS'], DASH = ['ShiftLeft', 'ShiftRight', 'ArrowRight', 'KeyD'];
   window.addEventListener('keydown', e => {
+    if ((e.target as HTMLElement).tagName === 'INPUT') return; // typing a name
+    game.touch = false; // training prompts show keys
     if (JUMP.includes(e.code) || DUCK.includes(e.code) || DASH.includes(e.code)) e.preventDefault();
     if (e.repeat) return;
     DR.Audio.init();
@@ -538,6 +829,7 @@
     const go = JUMP.includes(e.code) || e.code === 'Enter';
     if (screen === 'scrPause' && (go || e.code === 'KeyP' || e.code === 'Escape')) resume();
     else if (screen === 'scrTitle' && go) $('btnContinue').click();
+    else if (screen === 'scrHatch' && go) document.getElementById('hatchGo')?.click();
     else if (screen === 'scrResult' && go) ($('btnNext').classList.contains('hidden') ? $('btnReplay') : $('btnNext')).click();
     else if (screen === 'scrOver' && go) $('btnRetry').click();
     else if ((screen === 'scrLevels' || screen === 'scrHelp') && e.code === 'Escape') toTitle();
@@ -551,6 +843,9 @@
 
   // tap / click the play-field to jump
   $('game').addEventListener('pointerdown', e => { if (screen === null) { e.preventDefault(); game.press(); } });
+  // training prompts show ▲/▼ after a touch or click on the play-field, keys after a key press
+  game.touch = matchMedia('(pointer: coarse)').matches;
+  ['game', 'touch'].forEach(id => $(id).addEventListener('pointerdown', () => { game.touch = true; }, true));
   window.addEventListener('pointerup', () => game.release());
   const pad = (el, down, up) => {
     el.addEventListener('pointerdown', e => { e.preventDefault(); el.classList.add('down', 'scale-[.92]', 'bg-white/20'); down(); });
@@ -573,6 +868,8 @@ pad($('btnDash'), () => game.dash(), () => {});
   on('btnContinue', () => startLevel(Math.min(save.unlocked, LEVELS.length)));
   on('btnLevels', () => { buildLevels(); show('scrLevels'); });
   on('btnHelp', () => show('scrHelp'));
+  on('btnTraining', () => { save.seen.tutorial = false; persist(); startLevel(1); });
+  on('tutSkip', () => game.endTutorial(true));
   on('btnSound', () => { DR.Audio.setMuted(!DR.Audio.muted); refreshTitle(); });
   on('btnBackLevels', toTitle);
   on('btnBackHelp', toTitle);
@@ -596,13 +893,15 @@ pad($('btnDash'), () => game.dash(), () => {});
   on('btnOverWorlds', () => { buildLevels(); show('scrLevels'); startDemo(); });
   // the pause button lives inside the pointer-transparent HUD
   $('pauseBtn').addEventListener('pointerdown', e => e.stopPropagation());
+  $('tutSkip').addEventListener('pointerdown', e => e.stopPropagation());
 
   // first click anywhere unlocks audio and starts title music
   window.addEventListener('pointerdown', function first() {
-    DR.Audio.init(); if (screen === 'scrTitle' && game.L) DR.Audio.playMusic(game.L.music);
+    DR.Audio.init(); if ((screen === 'scrTitle' || screen === 'scrHatch') && game.L) DR.Audio.playMusic(game.L.music);
     window.removeEventListener('pointerdown', first);
   });
 
   DR.game = game; DR.startLevel = startLevel;
-  toTitle();
+  applyAge();
+  if (save.profile && !FORCE_ONBOARDING) toTitle(); else openHatch();
 })();
