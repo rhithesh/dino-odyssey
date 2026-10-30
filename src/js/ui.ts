@@ -674,7 +674,7 @@
     const ease = t => 1 - Math.pow(1 - Math.max(0, Math.min(1, t)), 3);
     g.clearRect(0, 0, W, H); g.imageSmoothingEnabled = false;
     const ex = Math.round(W / 2 - EW / 2), ey = G - EH, rimY = ey + 13;
-    let t = (now - scene.t0) / 1000, ang = 0, jx = 0, stage = 0, glow = 0, eggA = 1;
+    let t = (now - scene.t0) / 1000, ang = 0, jx = 0, jy = 0, quake = 0, stage = 0, glow = 0, eggA = 1;
     let dino = null; // { img, x, bottom, front, flip }
     const once = (k, fn) => { if (!scene.fired[k]) { scene.fired[k] = true; fn(); } };
 
@@ -682,10 +682,17 @@
       const k = (now / 1000) % 2.4;
       ang = k < .6 ? Math.sin(k * 22) * .1 * (1 - k / .6) : 0;
     } else if (scene.mode === 'hatching') {
-      if (t < HT.c1) ang = Math.sin(t * 9) * .05;
-      else if (t < HT.c2) ang = Math.sin(t * 13) * .08;
-      else if (t < HT.c3) ang = Math.sin(t * 19) * .12;
-      else if (t < HT.pop) { ang = Math.sin(t * 40) * .04; jx = Math.round((Math.random() - .5) * 2); }
+      // the shaking builds: rocking -> rocking and hopping -> wild hops -> out-of-control rattling
+      const R = () => Math.random() - .5;
+      if (t < HT.c1) ang = Math.sin(t * 11) * .14;
+      else if (t < HT.c2) { ang = Math.sin(t * 17) * .22 + R() * .05; jx = Math.sin(t * 17) * 1.5; jy = Math.max(0, Math.sin((t - HT.c1) * 9)) * 2; }
+      else if (t < HT.c3) { ang = Math.sin(t * 26) * .3 + R() * .1; jx = R() * 3; jy = Math.abs(Math.sin((t - HT.c2) * 13)) * 4; }
+      else if (t < HT.pop) { ang = R() * .7; jx = R() * 6; jy = Math.random() * 7; quake = 4 * (t - HT.c3) / (HT.pop - HT.c3) + 1; }
+      // knocking on the ground as it hops, faster and faster
+      if (t >= HT.c1 && t < HT.pop && now - (scene.knock || 0) > (t < HT.c2 ? 420 : t < HT.c3 ? 230 : 95)) { scene.knock = now; DR.Audio.sfx('land'); }
+      // each new crack lands like a kick from inside
+      const since = Math.min(...[HT.c1, HT.c2, HT.c3].map(c => t >= c ? t - c : 9)), kick = Math.max(0, 1 - since * 6);
+      if (t < HT.pop) { ang += kick * .3 * (Math.sin(t * 60) > 0 ? 1 : -1); jy += kick * 5; quake = Math.max(quake, kick * 3); }
       stage = t >= HT.c3 ? 3 : t >= HT.c2 ? 2 : t >= HT.c1 ? 1 : 0;
       glow = t < HT.c2 ? 0 : t < HT.pop ? ease((t - HT.c2) / (HT.pop - HT.c2)) : Math.max(0, 1 - (t - HT.pop) * 1.5);
       const cracks = n => { for (let i = 0; i < n; i++) setTimeout(() => DR.Audio.sfx('crack'), i * 100); };
@@ -727,6 +734,8 @@
       dino = { img: D.run[f], x: W / 2, bottom: G, front: true, flip: 1 };
     }
 
+    c.style.transform = quake > 0 ? `translate(${Math.round((Math.random() - .5) * 2 * quake)}px, ${Math.round((Math.random() - .5) * 2 * quake)}px)` : '';
+
     // light rays fanning out of the crack
     if (glow > 0) {
       g.save();
@@ -757,7 +766,7 @@
     if (dino && !dino.front) drawDino();
     if (eggA > 0) {
       g.save(); g.globalAlpha = eggA;
-      g.translate(W / 2 + jx, G); g.rotate(ang); g.translate(-W / 2, -G);
+      g.translate(W / 2 + Math.round(jx), G - Math.round(jy)); g.rotate(ang); g.translate(-W / 2, -G);
       if (!scene.top && scene.mode !== 'out') {
         g.drawImage(art.full, ex, ey);
         // the crack spreads from the middle outwards; light leaks through it
