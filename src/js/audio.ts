@@ -96,10 +96,41 @@
     if (i === 0 && cfg.pad) ch.forEach(m => tone(musicBus, t, mtof(m), sixteenth * 15, { type: 'sine', vol: .045, attack: .3 }));
   }
 
+  // ---------------- Victory dance grooves ----------------
+  // A short four-on-the-floor track in the world's key and tempo, one flavour per dance.
+  // Per 16th step: bass = semitones above the chord root (null rests), lead = scale degrees,
+  // stabs = steps that hit the chord. prog = scale degrees of the two chords, one per bar.
+  const _ = null;
+  const GROOVES = {
+    stomp: { prog: [0, 3], bass: [0, _, _, 0, _, _, 0, _, 0, _, _, 0, _, _, 12, _], stabs: [2, 6, 10, 14],
+      lead: [4, _, _, 4, _, _, 5, _, 4, _, 2, _, 0, _, _, _], bassType: 'square' },
+    moonwalk: { prog: [0, 6], bass: [0, _, 12, _, _, 0, _, 10, 0, _, 12, _, 7, _, 5, _], stabs: [3, 7, 11, 15],
+      lead: [_, _, 7, _, 6, _, 4, _, _, _, 4, _, 2, _, 1, _], bassType: 'sawtooth' },
+    disco: { prog: [0, 5], bass: [0, 12, 0, 12, 0, 12, 0, 12, 0, 12, 0, 12, 0, 12, 7, 12], stabs: [2, 6, 10, 14],
+      lead: [0, _, 2, _, 4, _, 7, _, 9, _, 7, _, 4, _, 2, _], bassType: 'sawtooth' },
+    bounce: { prog: [0, 4], bass: [0, _, _, _, 7, _, _, _, 0, _, _, _, 5, _, 7, _], stabs: [0, 4, 8, 12],
+      lead: [7, _, 7, _, _, _, 4, _, 7, _, 9, _, 7, _, _, _], bassType: 'triangle' },
+    shimmy: { prog: [0, 3], bass: [0, _, _, 7, _, _, 12, _, 0, _, _, 7, _, _, 5, _], stabs: [3, 6, 11, 14], clave: [0, 3, 6, 10, 12],
+      lead: [4, 5, 4, _, 2, _, 4, _, 7, _, 6, _, 4, _, 2, _], bassType: 'triangle' },
+  };
+  function schedDance(t) {
+    const s = song, g = s.groove, i = step % 16, bar = Math.floor(step / 16) % 2, sixteenth = 60 / s.bpm / 4;
+    const root = s.deg(g.prog[bar], 0), chord = [0, 2, 4].map(k => s.deg(g.prog[bar] + k, 1));
+    if (i % 4 === 0) kick(t, .95);                                                           // four on the floor
+    if (i === 4 || i === 12) { noise(musicBus, t, .12, { vol: .36, hp: 900, lp: 5000 }); noise(musicBus, t + .012, .1, { vol: .2, hp: 1500 }); } // clap
+    noise(musicBus, t, i % 4 === 2 ? .09 : .025, { vol: i % 4 === 2 ? .16 : .05, hp: 7000 }); // open hat on the off-beat, closed 16ths
+    if (g.clave && g.clave.includes(i)) tone(musicBus, t, 2400, .03, { type: 'square', vol: .05 });
+    const b = g.bass[i];
+    if (b !== null) tone(musicBus, t, mtof(root - 24 + b), sixteenth * 1.4, { type: g.bassType, vol: .36, filter: 900 });
+    if (g.stabs.includes(i)) chord.forEach(m => tone(musicBus, t, mtof(m), sixteenth * .9, { type: 'square', vol: .05, filter: 3200 }));
+    const n = g.lead[i];
+    if (n !== null) tone(musicBus, t, mtof(s.deg(n, 1)), sixteenth * 1.5, { type: 'square', vol: .08, filter: 4200 });
+  }
+
   function tick() {
     if (!song) return;
     const sixteenth = 60 / song.bpm / 4;
-    while (nextT < ctx.currentTime + .12) { schedStep(nextT); nextT += sixteenth; step++; }
+    while (nextT < ctx.currentTime + .12) { (song.groove ? schedDance : schedStep)(nextT); nextT += sixteenth; step++; }
   }
 
   DR.Audio = {
@@ -116,6 +147,23 @@
       musicBus.gain.cancelScheduledValues(ctx.currentTime);
       musicBus.gain.setValueAtTime(.32, ctx.currentTime);
       timer = setInterval(tick, 25);
+    },
+    // The victory dance track: the world's key and bpm, the dance's groove, for `secs` seconds,
+    // ending on a crash and the tonic chord.
+    playDance(cfg, style, secs) {
+      if (!ctx) return;
+      this.stopMusic(0);
+      const base = compose(cfg, false);
+      song = Object.assign(base, { groove: GROOVES[style] || GROOVES.stomp }); step = 0; nextT = ctx.currentTime + .03;
+      musicBus.gain.cancelScheduledValues(ctx.currentTime);
+      musicBus.gain.setValueAtTime(.34, ctx.currentTime);
+      timer = setInterval(tick, 25);
+      const end = ctx.currentTime + secs, tonic = [0, 2, 4].map(k => base.deg(k, 1));
+      kick(end, 1); noise(musicBus, end, 1.1, { vol: .22, hp: 3000 });
+      tonic.forEach(m => tone(musicBus, end, mtof(m), .9, { type: 'square', vol: .06, filter: 3000 }));
+      tone(musicBus, end, mtof(base.deg(0, -1)), .9, { type: 'triangle', vol: .4 });
+      const mine = song;
+      setTimeout(() => { if (song === mine) { if (timer) clearInterval(timer); timer = null; song = null; } }, secs * 1000);
     },
     stopMusic(fade = .4) {
       if (timer) clearInterval(timer); timer = null;
@@ -162,8 +210,6 @@
         case 'horn': [0, .13].forEach(d => tone(sfxBus, t + d, 740, .1, { type: 'square', vol: .07, filter: 2200 })); break; // auto / scooter
         case 'honk': tone(sfxBus, t, 330, .32, { type: 'sawtooth', vol: .08, filter: 1400 }); tone(sfxBus, t, 415, .32, { type: 'sawtooth', vol: .06, filter: 1400 }); break; // car / lorry
         case 'crack': noise(sfxBus, t, .06, { vol: .32, hp: 1800 }); tone(sfxBus, t, 1900, .03, { type: 'square', vol: .06, slide: .6 }); break; // eggshell
-        case 'kick': tone(sfxBus, t, 150, .14, { type: 'sine', vol: .32, slide: .3 }); break; // victory dance beat
-        case 'hat': noise(sfxBus, t, .04, { vol: .1, hp: 6000 }); break;
         case 'click': tone(sfxBus, t, 1200, .04, { vol: .08 }); break;
       }
     },
