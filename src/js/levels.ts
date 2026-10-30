@@ -18,12 +18,12 @@ DR.LEVELS = [
     tips: ['Watch the drone\'s rhythm before you commit.'],
   },
   {
-    id: 3, name: 'FROZEN AURORA', tagline: 'Under the northern lights, the ice remembers.', twist: 'FALLING ICICLES & BLIZZARDS',
-    mode: 'run', bg: 'tundra', weather: 'snow', ground: 'ice', flyer: 'ptero', fallers: 'icicle', gusts: true,
+    id: 3, name: 'FROZEN AURORA', tagline: 'Under the northern lights, the ice remembers.', twist: 'ICICLES & PENGUIN PARADES — the locals walk the other way',
+    mode: 'run', bg: 'tundra', weather: 'snow', ground: 'ice', flyer: 'ptero', fallers: 'icicle', gusts: true, critters: true, igloo: true,
     goal: 1100, speed: [215, 300], gap: [1.0, 1.8], flyerFrom: .2,
     palette: { skyTop: '#04122a', skyMid: '#14456b', skyBot: '#5d93b5', sun: '#e8f6ff', aurora: '#5dffb0', far: '#b9d6ee', mid: '#7aa2c4', near: '#2c4f6e', ground: '#eef8ff', groundDark: '#b5d3ea', line: '#8fb8d8', dino: '#1d3550', dinoEye: '#e8f6ff', obstacle: '#8fdcff', flyer: '#f5fbff', accent: '#ffffff', accent2: '#c9f0ff', grade: 'rgba(120,200,255,.05)' },
     music: { bpm: 100, root: 55, scale: 'lydian', prog: [0, 4, 5, 1], lead: 'triangle', pad: true, echo: true, seed: 33 },
-    tips: ['A red marker shows where an icicle will land.'],
+    tips: ['A red marker shows where an icicle will land.', 'Long penguin parades need a held jump.', 'Mammoths and polar bears are wide: jump early and hold.'],
   },
   {
     id: 4, name: 'MAGMA CORE', tagline: 'The earth is cracking open.', twist: 'METEOR SHOWERS & LAVA PITS',

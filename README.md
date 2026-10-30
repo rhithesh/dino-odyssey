@@ -25,7 +25,7 @@ Space / ↑ / tap: jump (hold for higher) · ↓: duck / fast-fall · P / Esc: p
 ## Worlds
 1. Desert Dawn: the classic
 2. Neon Rain: bobbing drones
-3. Frozen Aurora: falling icicles and blizzards
+3. Frozen Aurora: falling icicles and blizzards, plus penguin parades, polar bears and woolly mammoths walking toward you, and lone penguins waddling ahead
 4. Magma Core: meteors and lava pits, **boss: Magma Wyrm**
 5. The Abyss: underwater swimming
 6. Haunted Hollow: darkness and lightning, phasing ghosts, **boss: Phantom King**
