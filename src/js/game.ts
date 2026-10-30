@@ -11,6 +11,8 @@
   // Jump feel (see Game.jump): hop = HOP x full height; a press held for HOLD_WIN s commits to the full jump;
   // falling uses FALL x the rise gravity.
   const HOP = .6, HOLD_WIN = .1, FALL = 1.45;
+  // Victory: walk to centre stage for WALK s, dance for DANCE s (see dances.js), then the result screen.
+  const WALK = .7, DANCE = 3;
   const CHIP = { pothole: .25, hump: .25 }; // damage sources that cost a fraction of a heart
   DR.JUMP = { HOP, HOLD_WIN, FALL };
 
@@ -259,7 +261,7 @@
       let target = lerp(L.speed[0] * this.st.speedMul, L.speed[1] * this.st.speedMul * this.st.maxSpeedMul, prog) * this.penalty;
       if (this.phase === 'intro') target = this.phaseT > 1.2 ? L.speed[0] * ease((this.phaseT - 1.2) / 2.3) : 0;
       if (this.phase === 'boss' || this.phase === 'bossIntro') target = L.speed[1] * .85;
-      if (this.phase === 'dead') target = 0;
+      if (this.phase === 'dead' || this.phase === 'win') target = 0;
       if (p.dash > 0) target *= 1.7;
       this.speed += (target - this.speed) * Math.min(1, dt * (p.dash > 0 ? 14 : 2.5));
       this.penalty += (1 - this.penalty) * dt * this.st.penaltyRec;
@@ -301,9 +303,11 @@
           if (this.finish) { this.finish.x -= this.speed * dt; if (this.finish.x < p.x + 10) this.win(); }
           break;
         case 'win': {
-          this.zoom = lerp(this.zoom, 1.12, dt * 2);
-          if (this.phaseT > .7) p.x += (60 + this.phaseT * 160) * dt;
-          if (this.phaseT > 3 && !this.ended) this.end(true);
+          this.zoom = lerp(this.zoom, 1.25, realDt * 2);
+          const t = this.phaseT;
+          if (t < WALK) p.x = lerp(this.winX, this.W / 2 - 10, ease(t / WALK)); // stroll to centre stage
+          else this.danceBeat();
+          if (t > WALK + DANCE + .2 && !this.ended) this.end(true);
           break;
         }
         case 'dead': {
@@ -480,6 +484,8 @@
     win() {
       if (this.phase === 'win') return;
       this.setPhase('win'); this.slow = .5;
+      this.winX = this.p.x; this.danceN = -1; this.p.inv = 0;
+      this.dance = DR.DANCES[(Math.random() * DR.DANCES.length) | 0];
       DR.Audio.stopMusic(.6); DR.Audio.sfx('win');
       this.fx.doFlash(.6, '#fff');
       if (this.L.finishStyle === 'signal' && this.finish) { // horn chorus and auto-coloured confetti at the board
@@ -643,6 +649,7 @@
       this.drawEntities(ctx);
       if (this.finish) this.drawFinish(ctx);
       if (this.boss) this.drawBoss(ctx);
+      this.drawStage(ctx);
       this.drawPlayer(ctx);
       if (this.L.tide) this.drawTide(ctx);
       this.fx.drawParts(ctx);
@@ -667,6 +674,38 @@
       if (this.phase === 'win') this.drawWinCard(ctx);
     }
 
+    // ---------------- victory dance ----------------
+    beats() { return (this.phaseT - WALK) * ((this.L.music && this.L.music.bpm) || 120) / 60; }
+    // On each beat: a kick drum, plus the dance's own burst (dust, music notes or sparks).
+    danceBeat() {
+      const n = Math.floor(this.beats());
+      if (n === this.danceN || this.phaseT > WALK + DANCE) return;
+      this.danceN = n;
+      const p = this.p, P = this.L.palette, fx = this.dance.fx, x = p.x + 10, gy = p.y;
+      DR.Audio.sfx('kick'); if (n % 2) DR.Audio.sfx('hat');
+      if (fx === 'dust') this.fx.burst(x, gy, 8, { color: [P.groundDark, P.ground], speed: 70, angle: -Math.PI / 2, spread: 2.6, life: .4, grav: 300 });
+      if (fx === 'notes' || n % 2 === 0) this.fx.text(x + (n % 2 ? 14 : -10), gy - 30, n % 3 ? '♪' : '♫', P.accent, 9, .9);
+      if (fx === 'sparks') this.fx.burst(x, gy - 12, 10, { color: [P.accent, P.accent2, '#fff'], speed: 110, grav: 60, life: .6, glow: true, shape: 'star' });
+      if (n % 4 === 3) this.fx.burst(this.W * (.25 + Math.random() * .5), this.H * .2, 26, { color: ['#ffcf4a', '#ff6b3d', '#7df9ff', '#fff', '#ff6bd6'], speed: 140, grav: 120, life: 1.2, glow: true });
+    }
+    // The dancer's pose this frame, or null when not dancing. The walk to centre stage uses the run cycle.
+    dancePose() {
+      if (this.phase !== 'win' || !this.dance || this.p.dead) return null;
+      if (this.phaseT < WALK) return { f: 'run', i: Math.floor(this.time * 12) % 4 };
+      return this.dance.pose(Math.min(this.beats(), DANCE * ((this.L.music && this.L.music.bpm) || 120) / 60));
+    }
+    // Spotlight on the dancer while the dance runs.
+    drawStage(ctx) {
+      if (this.phase !== 'win' || !this.dance || this.phaseT < WALK * .6) return;
+      const p = this.p, a = Math.min(1, (this.phaseT - WALK * .6) * 2), x = p.x + 10, gy = p.floor || this.GY;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      const cone = ctx.createLinearGradient(0, 0, 0, gy);
+      cone.addColorStop(0, 'rgba(255,245,200,0)'); cone.addColorStop(1, `rgba(255,245,200,${.16 * a})`);
+      ctx.fillStyle = cone; ctx.beginPath(); ctx.moveTo(x - 6, 0); ctx.lineTo(x + 6, 0); ctx.lineTo(x + 24, gy); ctx.lineTo(x - 24, gy); ctx.fill();
+      ctx.fillStyle = `rgba(255,245,200,${.22 * a})`; ctx.beginPath(); ctx.ellipse(x, gy, 24, 4, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
     drawPlayer(ctx) {
       const p = this.p, S = this.S;
       if (p.x < -30 || p.x > this.W + 30) return;
@@ -685,11 +724,13 @@
       else if (!p.onGround && this.mode !== 'flip') img = S.dino.jump;
       else if (this.speed < 5 && this.phase !== 'intro') img = S.dino.stand;
       else img = S.dino.run[runFrame];
+      const dp = this.dancePose();
+      if (dp) img = dp.f === 'run' ? S.dino.run[dp.i % nFrames] : dp.f === 'duck' ? S.dino.duck[(dp.i || 0) % S.dino.duck.length] : S.dino[dp.f];
       // afterimages
       const ax = img.ax || 0, ay = img.ay || 0;
       for (let i = 0; i < this.trail.length; i++) { const t = this.trail[i]; ctx.globalAlpha = .08 * i; ctx.drawImage(img, t.x - ax - (this.trail.length - i) * 3, flipped ? t.y - ay : t.y - img.height + ay); }
       ctx.globalAlpha = 1;
-      if (p.inv > 0 && !(p.dash > 0) && !this.L.retro && Math.floor(p.inv * 14) % 2 === 0 && !p.dead) img = p.duck ? S.dinoHurt.duck[runFrame] : !p.onGround && this.mode !== 'flip' ? S.dinoHurt.jump : S.dinoHurt.run[runFrame];
+      if (!dp && p.inv > 0 && !(p.dash > 0) && !this.L.retro && Math.floor(p.inv * 14) % 2 === 0 && !p.dead) img = p.duck ? S.dinoHurt.duck[runFrame] : !p.onGround && this.mode !== 'flip' ? S.dinoHurt.jump : S.dinoHurt.run[runFrame];
       ctx.save();
       const cx = p.x - (img.ax || 0) + img.width / 2, cy = flipped ? p.y + img.height / 2 - (img.ay || 0) : p.y - img.height / 2 + (img.ay || 0);
       if (p.dash > 0) ctx.globalAlpha = .7 + .3 * Math.sin(this.time * 60);
@@ -699,8 +740,13 @@
       if (this.L.retro) { ctx.shadowColor = 'rgba(70,70,70,.45)'; ctx.shadowBlur = 2; ctx.shadowOffsetY = 1; }
       ctx.translate(Math.round(cx), Math.round(cy));
       if (p.rot) ctx.rotate(p.rot);
+      if (dp) { // dance moves, about the feet (mirrored on the ceiling in flip worlds)
+        const fl = flipped ? -1 : 1, foot = fl * img.height / 2;
+        ctx.translate(dp.dx || 0, (dp.dy || 0) * fl + foot); ctx.rotate((dp.rot || 0) * fl);
+        ctx.scale((dp.flip || 1) * (dp.sx || 1), dp.sy || 1); ctx.translate(0, -foot);
+      }
       // squash & stretch: sq > 0 stretches (take-off), sq < 0 squashes (landing); scaled about the feet
-      if (Math.abs(p.sq) > .02 && !flipped && this.mode !== 'swim') {
+      if (!dp && Math.abs(p.sq) > .02 && !flipped && this.mode !== 'swim') {
         const sy = 1 + .12 * p.sq, sx = 1 - .1 * p.sq, foot = img.height / 2;
         ctx.translate(0, foot); ctx.scale(sx, sy); ctx.translate(0, -foot);
       }
@@ -896,6 +942,7 @@
       const t = this.phaseT; if (t < .3 || this.ended) return;
       const k = ease((t - .3) / .4);
       this.text(ctx, this.boss ? 'BOSS DEFEATED!' : 'WORLD CLEAR!', this.W / 2, this.H * .3, 22 * (2 - k), this.L.palette.accent, { alpha: k, spacing: 2 });
+      if (this.dance && t > WALK) this.text(ctx, `♪ ${this.dance.name} ♪`, this.W / 2, this.H * .3 + 20, 9, this.L.retro ? '#535353' : '#fff', { alpha: Math.min(1, (t - WALK) * 3), spacing: 2 });
     }
     drawGlitch(ctx) {
       const g = this.fx.glitch, W = this.W, H = this.H;

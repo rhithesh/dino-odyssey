@@ -27,7 +27,7 @@ There is no automated test suite. Verification is:
 ## Architecture rules
 
 - **Classic scripts, not ES modules.** `tsconfig.json` uses `module: "none"`. Source files share a browser-global `DR` object, declared in `src/globals.d.ts` and initialized in `src/js/sprites.ts`.
-- **Script order matters.** `sidepanel.html` loads scripts in a fixed order: `sprites`/`audio` → `levels`/`dinos`/`upgrades` → `backgrounds`/`fx` → `game` → `entities` → `ui`. Do not reorder them, and do not add an `import`/`export` that would break this model.
+- **Script order matters.** `sidepanel.html` loads scripts in a fixed order: `sprites`/`audio` → `levels`/`dinos`/`upgrades`/`dances` → `backgrounds`/`fx` → `game` → `entities` → `ui`. Do not reorder them, and do not add an `import`/`export` that would break this model.
 - **`DR` is broadly typed as `any`.** Strict checking is off (`strict: false`, `noImplicitAny: false`). Do not tighten types casually. Doing so would need explicit interfaces and changes at the script boundaries.
 - **World IDs are array indexes.** `ui.ts` looks up worlds with `LEVELS[id - 1]`. Keep `src/js/levels.ts` in ID order, and do not reorder or remove entries without updating that lookup.
 - **Save data lives in localStorage.** Progress is under `dr_save`, and the sound preference is under `dr_muted`. Changing the save shape needs a migration or a defensive default so existing saves still load.
