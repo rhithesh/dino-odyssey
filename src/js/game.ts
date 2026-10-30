@@ -676,13 +676,13 @@
 
     // ---------------- victory dance ----------------
     beats() { return (this.phaseT - WALK) * ((this.L.music && this.L.music.bpm) || 120) / 60; }
-    // On each beat: a kick drum, plus the dance's own burst (dust, music notes or sparks).
+    // On each beat: the dance's own burst (dust, music notes or sparks). The music comes from Audio.playDance.
     danceBeat() {
       const n = Math.floor(this.beats());
       if (n === this.danceN || this.phaseT > WALK + DANCE) return;
       this.danceN = n;
       const p = this.p, P = this.L.palette, fx = this.dance.fx, x = p.x + 10, gy = p.y;
-      DR.Audio.sfx('kick'); if (n % 2) DR.Audio.sfx('hat');
+      if (n === 0) DR.Audio.playDance(this.L.music, this.dance.music, DANCE); // the dance track starts on the first beat
       if (fx === 'dust') this.fx.burst(x, gy, 8, { color: [P.groundDark, P.ground], speed: 70, angle: -Math.PI / 2, spread: 2.6, life: .4, grav: 300 });
       if (fx === 'notes' || n % 2 === 0) this.fx.text(x + (n % 2 ? 14 : -10), gy - 30, n % 3 ? '♪' : '♫', P.accent, 9, .9);
       if (fx === 'sparks') this.fx.burst(x, gy - 12, 10, { color: [P.accent, P.accent2, '#fff'], speed: 110, grav: 60, life: .6, glow: true, shape: 'star' });
