@@ -14,7 +14,7 @@
     save.v = 2; persist();
   }
   const totalStars = () => Object.values(save.stars).reduce<number>((a, b) => a + Number(b), 0);
-  // Onboarding: save.profile = { name, dino, color, age } from the hatch screens (absent until hatched);
+  // Onboarding: save.profile = { name, dino, color } (older saves may also carry age) from the hatch screens (absent until hatched);
   // save.seen = one-time lessons already done. Saves from before onboarding already know how to play.
   if (!save.seen || typeof save.seen !== 'object') save.seen = save.unlocked > 1 || totalStars() > 0 ? { tutorial: true } : {};
   if (save.profile) DR.setMyDino(save.profile);
@@ -534,20 +534,18 @@
   function resume() { game.paused = false; game.last = performance.now(); DR.Audio.resume(); show(null); }
 
   // ---------------- onboarding: hatch your own dino ----------------
-  // welcome -> name -> age -> the egg hatches (pick a color, rename) -> training run, or the title for old saves.
-  const AGES = [{ id: 'kid', label: 'UNDER 8' }, { id: 'mid', label: '8 – 12' }, { id: 'teen', label: '13+' }];
+  // welcome -> name -> the egg hatches (pick a color, rename) -> training run, or the title for old saves.
   const BTN_GO = 'w-full cursor-pointer rounded-xl px-[14px] py-[13px] text-sm font-extrabold tracking-[2px] bg-gradient-to-b from-[#ffd65c] to-[#ff8a3d] text-[#2a1004] border border-[#fff3c4] shadow-[0_4px_0_#8a3510,0_0_24px_rgba(255,150,60,.35)] transition-transform duration-100 hover:brightness-110 hover:-translate-y-px active:translate-y-[3px] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0';
-  const BTN_ALT = 'w-full cursor-pointer rounded-xl px-[14px] py-[13px] text-sm font-extrabold tracking-[2px] bg-[rgba(20,16,32,.6)] border border-white/20 backdrop-blur-md shadow-[0_4px_0_rgba(0,0,0,.5)] transition-[transform,background] duration-150 hover:bg-white/15 active:translate-y-[3px]';
   const H_TITLE = 'text-[15px] font-black tracking-[3px] [text-shadow:0_2px_0_#000]', H_SUB = 'text-[11px] tracking-wide text-[var(--dim)]';
-  const hatch = { name: '', dino: '', age: null, color: 0, hatched: false };
+  const hatch = { name: '', dino: '', color: 0, hatched: false };
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   function applyAge() {
-    // little hands get bigger touch pads
+    // little hands get bigger touch pads (age is no longer asked; only profiles from older saves carry it)
     const kid = !!save.profile && save.profile.age === 'kid';
     ['btnJump', 'btnDuck', 'btnDash'].forEach(id => { $(id).classList.toggle('h-20', kid); $(id).classList.toggle('w-20', kid); $(id).classList.toggle('h-16', !kid); $(id).classList.toggle('w-16', !kid); });
   }
   function openHatch() {
-    Object.assign(hatch, { name: '', dino: '', age: null, color: 0, hatched: false });
+    Object.assign(hatch, { name: '', dino: '', color: 0, hatched: false });
     show('scrHatch'); startDemo(); startScene(); hatchStep('welcome');
   }
   function hatchStep(step) {
@@ -573,7 +571,7 @@
       inp.value = hatch.name; sync();
       inp.addEventListener('input', sync);
       inp.addEventListener('keydown', e => { if (e.key === 'Enter') go.click(); });
-      go.onclick = () => { if (go.disabled) return; DR.Audio.sfx('click'); hatchStep(hatch.hatched ? 'meet' : 'age'); };
+      go.onclick = () => { if (go.disabled) return; DR.Audio.sfx('click'); if (hatch.hatched) hatchStep('meet'); else hatchOpen(); };
       setTimeout(() => inp.focus(), 50);
     } else if (step === 'rename') {
       box.innerHTML = `<div class="${H_TITLE}">NAME YOUR DINO</div>
@@ -585,13 +583,6 @@
       inp.addEventListener('keydown', e => { if (e.key === 'Enter') go.click(); });
       go.onclick = () => { if (!inp.value) return; hatch.dino = inp.value; DR.Audio.sfx('click'); hatchStep('meet'); };
       setTimeout(() => { inp.focus(); inp.select(); }, 50);
-    } else if (step === 'age') {
-      box.innerHTML = `<div class="${H_TITLE}">HOW OLD ARE YOU?</div>
-        <div class="${H_SUB}">So we explain things the right way.</div>
-        <div class="flex w-full gap-2">${AGES.map(a => `<button data-age="${a.id}" class="${BTN_ALT} whitespace-nowrap px-1 !tracking-normal">${a.label}</button>`).join('')}</div>
-        <button id="hatchSkipAge" class="cursor-pointer text-[11px] tracking-wide text-[var(--dim)] underline">skip</button>`;
-      box.querySelectorAll('[data-age]').forEach((b: HTMLElement) => b.onclick = () => { hatch.age = b.dataset.age; DR.Audio.sfx('click'); hatchOpen(); });
-      $('hatchSkipAge').onclick = () => { hatch.age = null; DR.Audio.sfx('click'); hatchOpen(); };
     } else if (step === 'meet') {
       DR.setMyDino({ dino: hatch.dino, color: hatch.color });
       turnCache['mine'] = turnCache['mine:l'] = null;
@@ -803,7 +794,7 @@
   }
   function finishHatch() {
     DR.Audio.sfx('click'); cancelAnimationFrame(scene.raf);
-    save.profile = { name: hatch.name, dino: hatch.dino, color: hatch.color, age: hatch.age };
+    save.profile = { name: hatch.name, dino: hatch.dino, color: hatch.color };
     DR.setMyDino(save.profile);
     if (!save.dinos.includes('mine')) save.dinos.push('mine');
     save.dino = 'mine'; persist(); applyAge();
