@@ -1,3 +1,4 @@
 import { rmSync } from 'node:fs';
 
-rmSync(new URL('../dist', import.meta.url), { recursive: true, force: true });
+const dir = process.argv[2] || 'dist';
+rmSync(new URL(`../${dir}`, import.meta.url), { recursive: true, force: true });

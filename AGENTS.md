@@ -17,6 +17,8 @@ Read these before larger changes:
 npm install          # first time only
 npm run typecheck    # tsc --noEmit over src/
 npm run build        # clean dist/, compile TS, Tailwind CSS, copy static files
+npm run build:web    # same sources into www/, the web bundle for Capacitor
+npm run ios          # build:web, sync into ios/, open in Xcode (needs full Xcode)
 ```
 
 There is no automated test suite. Verification is:
@@ -36,6 +38,7 @@ There is no automated test suite. Verification is:
 ## Files not to edit
 
 - `dist/` is generated and git-ignored. Never hand-edit it. Change `src/`, `sidepanel.html`, `sidepanel.css`, or `manifest.json`, then rebuild.
+- `www/` and `ios/App/App/public/` are generated and git-ignored too. Native settings in the rest of `ios/` are committed and can be edited.
 - `node_modules/` and `package-lock.json` change only through npm.
 
 ## Styling

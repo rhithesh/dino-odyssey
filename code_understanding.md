@@ -25,6 +25,8 @@ Dino Odyssey is a Chrome Manifest V3 side-panel extension. It is a vanilla DOM-a
 | `src/js/ui.ts` | Save data, screen navigation, HUD, world cards, dinosaur pages, input, and game callbacks. |
 | `tailwind.config.cjs`, `tsconfig.json`, `scripts/` | Styling and TypeScript build configuration plus generated-output handling. |
 | `dist/` | Generated, loadable extension. Do not edit by hand; it is recreated by the build. |
+| `capacitor.config.json`, `ios/` | Capacitor config and the committed native iOS project (portrait, status bar hidden). |
+| `www/` | Generated web bundle for Capacitor: `sidepanel.html` as `index.html`, without `manifest.json` or `background.js`. Do not edit by hand. |
 
 ## Runtime architecture
 

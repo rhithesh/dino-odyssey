@@ -2,7 +2,7 @@
 <html lang="en" class="h-full">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Dino Odyssey</title>
   <link rel="stylesheet" href="sidepanel.css">
 </head>
@@ -25,11 +25,11 @@
     </symbol>
   </defs></svg>
 <div id="app" class="relative h-screen w-screen overflow-hidden">
-  <canvas id="game" class="absolute inset-0 block h-full w-full [image-rendering:pixelated]"></canvas>
+  <canvas id="game" class="absolute inset-0 block touch-none h-full w-full [image-rendering:pixelated]"></canvas>
   <div id="veil" class="hidden absolute inset-0 z-[1] bg-[rgba(6,5,13,.5)]"></div>
 
   <!-- In-game HUD -->
-  <div id="hud" class="hidden absolute inset-0 pointer-events-none p-[10px_12px]">
+  <div id="hud" class="hidden absolute inset-x-0 bottom-0 top-[env(safe-area-inset-top)] pointer-events-none p-[10px_12px]">
     <div class="flex items-center justify-between gap-2">
       <div id="hearts" class="flex min-w-[70px] gap-1 text-xl"></div>
       <div class="text-center">
@@ -49,15 +49,15 @@
   </div>
 
   <!-- Touch / mouse controls -->
-  <div id="touch" class="hidden absolute inset-x-0 bottom-[14px] flex justify-between px-4 pointer-events-none">
-    <button id="btnDuck" class="pad pointer-events-auto h-16 w-16 rounded-full text-[22px] bg-black/30 border-2 border-white/30 backdrop-blur-[3px] transition-[transform,background] duration-100 active:scale-[.92] active:bg-white/20" aria-label="Duck">▼</button>
-    <button id="btnDash" class="pad hidden pointer-events-auto relative mb-1 h-16 w-16 overflow-hidden rounded-full text-[22px] bg-black/30 border-2 border-white/30 backdrop-blur-[3px] transition-[transform,background] duration-100 active:scale-[.92] active:bg-white/20" aria-label="Dash"><i id="padDashFill" class="absolute inset-x-0 bottom-0 h-0 bg-white/30"></i><b class="relative z-[1]">≫</b></button>
-    <button id="btnJump" class="pad pointer-events-auto h-16 w-16 rounded-full text-[22px] bg-black/30 border-2 border-white/30 backdrop-blur-[3px] transition-[transform,background] duration-100 active:scale-[.92] active:bg-white/20" aria-label="Jump">▲</button>
+  <div id="touch" class="hidden absolute inset-x-0 bottom-[calc(14px+env(safe-area-inset-bottom))] flex justify-between px-4 pointer-events-none">
+    <button id="btnDuck" class="pad touch-none pointer-events-auto h-16 w-16 rounded-full text-[22px] bg-black/30 border-2 border-white/30 backdrop-blur-[3px] transition-[transform,background] duration-100 active:scale-[.92] active:bg-white/20" aria-label="Duck">▼</button>
+    <button id="btnDash" class="pad touch-none hidden pointer-events-auto relative mb-1 h-16 w-16 overflow-hidden rounded-full text-[22px] bg-black/30 border-2 border-white/30 backdrop-blur-[3px] transition-[transform,background] duration-100 active:scale-[.92] active:bg-white/20" aria-label="Dash"><i id="padDashFill" class="absolute inset-x-0 bottom-0 h-0 bg-white/30"></i><b class="relative z-[1]">≫</b></button>
+    <button id="btnJump" class="pad touch-none pointer-events-auto h-16 w-16 rounded-full text-[22px] bg-black/30 border-2 border-white/30 backdrop-blur-[3px] transition-[transform,background] duration-100 active:scale-[.92] active:bg-white/20" aria-label="Jump">▲</button>
   </div>
 
   <!-- Screens -->
-  <section id="scrTitle" class="absolute inset-0 z-[2] flex flex-col items-center justify-center gap-[18px] p-5 text-center animate-[screenIn_.35s_ease-out]">
-    <div class="absolute top-[14px] flex items-center gap-[6px] rounded-full px-[10px] py-[5px] text-[10px] tracking-wide bg-black/40 border border-white/20" id="netChip"><span class="h-[7px] w-[7px] rounded-full bg-[#4ade80] shadow-[0_0_8px_#4ade80]"></span><span id="netText">No internet? No problem.</span></div>
+  <section id="scrTitle" class="absolute inset-0 z-[2] flex flex-col items-center justify-center gap-[18px] p-5 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-[calc(1.25rem+env(safe-area-inset-bottom))] text-center animate-[screenIn_.35s_ease-out]">
+    <div class="absolute top-[calc(14px+env(safe-area-inset-top))] flex items-center gap-[6px] rounded-full px-[10px] py-[5px] text-[10px] tracking-wide bg-black/40 border border-white/20" id="netChip"><span class="h-[7px] w-[7px] rounded-full bg-[#4ade80] shadow-[0_0_8px_#4ade80]"></span><span id="netText">No internet? No problem.</span></div>
     <div class="-mt-[30px]">
       <div class="text-[11px] tracking-[6px] text-[var(--dim)]">NO INTERNET</div>
       <div class="my-2 text-[46px] leading-[.95] font-black tracking-[3px] animate-[logoFloat_3s_ease-in-out_infinite]"><span class="inline-block bg-gradient-to-b from-[#fff6d5] via-[#ffcf4a] to-[#ff6b3d] bg-clip-text text-transparent [filter:drop-shadow(0_4px_0_#3a1408)_drop-shadow(0_0_22px_rgba(255,140,60,.45))]">DINO</span><br><span class="inline-block -mt-[14px] px-[10px] pt-[4px] pb-[10px] text-[52px] leading-[1.15] font-bold tracking-[1px] text-[#ff3b5c] [-webkit-text-fill-color:#ff3b5c] [text-shadow:0_3px_0_#4a0010] font-['Priestacy','Snell_Roundhand','Brush_Script_MT',cursive]">Odyssey</span></div>
@@ -77,11 +77,11 @@
         <button class="flex-1 cursor-pointer rounded-xl px-2 py-[9px] text-[11px] font-extrabold tracking-wide bg-[rgba(20,16,32,.6)] border border-white/20 backdrop-blur-md shadow-[0_4px_0_rgba(0,0,0,.5)] transition-[transform,background,box-shadow] duration-150 hover:bg-white/15 active:translate-y-[3px]" id="btnHelp">? HOW TO</button>
       </div>
     </div>
-    <div class="absolute bottom-[18px] text-[11px] text-[var(--dim)] animate-[blink_1.6s_steps(2)_infinite]">Click here first, then press <kbd class="inline-block rounded px-[6px] py-px text-[.85em] bg-white/10 border border-white/25 border-b-[3px]">SPACE</kbd></div>
+    <div class="absolute bottom-[calc(18px+env(safe-area-inset-bottom))] [@media(pointer:coarse)]:hidden text-[11px] text-[var(--dim)] animate-[blink_1.6s_steps(2)_infinite]">Click here first, then press <kbd class="inline-block rounded px-[6px] py-px text-[.85em] bg-white/10 border border-white/25 border-b-[3px]">SPACE</kbd></div>
   </section>
 
   <!-- Onboarding: name -> the egg hatches into your own dino. Steps are filled in by ui.js. -->
-  <section id="scrHatch" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-center gap-4 p-5 text-center animate-[screenIn_.35s_ease-out]">
+  <section id="scrHatch" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-center gap-4 p-5 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-[calc(1.25rem+env(safe-area-inset-bottom))] text-center animate-[screenIn_.35s_ease-out]">
     <div class="relative flex h-[180px] w-[240px] items-end justify-center">
       <div class="absolute bottom-0 left-1/2 h-[50px] w-[200px] -translate-x-1/2 rounded-full bg-[radial-gradient(ellipse,rgba(255,207,74,.35),transparent_70%)]"></div>
       <canvas id="hatchCanvas" class="relative block h-[180px] w-[240px] [image-rendering:pixelated]" width="80" height="60"></canvas>
@@ -89,8 +89,8 @@
     <div id="hatchStep" class="flex w-[min(280px,90%)] flex-col items-center gap-3"></div>
   </section>
 
-  <section id="scrLevels" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-start gap-[18px] px-0 pt-[60px] pb-4 text-center overflow-y-auto animate-[screenIn_.35s_ease-out]">
-    <div class="absolute inset-x-0 top-0 z-[2] flex items-center justify-between p-3 bg-gradient-to-b from-[rgba(5,4,10,.92)] to-[rgba(5,4,10,.35)]">
+  <section id="scrLevels" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-start gap-[18px] px-0 pt-[calc(60px+env(safe-area-inset-top))] pb-[calc(1rem+env(safe-area-inset-bottom))] text-center overflow-y-auto animate-[screenIn_.35s_ease-out]">
+    <div class="absolute inset-x-0 top-0 z-[2] flex items-center justify-between p-3 pt-[calc(.75rem+env(safe-area-inset-top))] bg-gradient-to-b from-[rgba(5,4,10,.92)] to-[rgba(5,4,10,.35)]">
       <button class="icon-btn pointer-events-auto h-[34px] w-[34px] rounded-[10px] text-[13px] font-extrabold bg-black/35 border border-white/20 backdrop-blur-[4px] hover:bg-white/15" id="btnBackLevels">←</button>
       <h2 class="m-0 text-[15px] tracking-[4px]">SELECT WORLD</h2>
       <div id="totalStars" class="min-w-[34px] text-xs text-[var(--accent)]">★ 0/24</div>
@@ -99,8 +99,8 @@
     <div id="levelGrid" class="flex w-full max-w-[520px] flex-col gap-4 pt-2"></div>
   </section>
 
-  <section id="scrDex" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-start gap-[18px] px-0 pt-[60px] pb-4 text-center overflow-y-auto animate-[screenIn_.35s_ease-out]">
-    <div class="absolute inset-x-0 top-0 z-[2] flex items-center justify-between p-3 bg-gradient-to-b from-[rgba(5,4,10,.92)] to-[rgba(5,4,10,.35)]">
+  <section id="scrDex" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-start gap-[18px] px-0 pt-[calc(60px+env(safe-area-inset-top))] pb-[calc(1rem+env(safe-area-inset-bottom))] text-center overflow-y-auto animate-[screenIn_.35s_ease-out]">
+    <div class="absolute inset-x-0 top-0 z-[2] flex items-center justify-between p-3 pt-[calc(.75rem+env(safe-area-inset-top))] bg-gradient-to-b from-[rgba(5,4,10,.92)] to-[rgba(5,4,10,.35)]">
       <button class="icon-btn pointer-events-auto h-[34px] w-[34px] rounded-[10px] text-[13px] font-extrabold bg-black/35 border border-white/20 backdrop-blur-[4px] hover:bg-white/15" id="btnBackDex">←</button>
       <h2 class="m-0 text-[15px] tracking-[4px]">DINO DEX</h2>
       <div id="dexCount" class="min-w-[34px] text-xs text-[var(--accent)]">1/19</div>
@@ -109,8 +109,8 @@
     <p class="mt-3 text-[9px] opacity-50">* Not technically dinosaurs, but we let them in anyway.</p>
   </section>
 
-  <section id="scrDino" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-start gap-1.5 px-[14px] pt-[60px] pb-[18px] text-center overflow-y-auto animate-[screenIn_.35s_ease-out]">
-    <div class="absolute inset-x-0 top-0 z-[2] flex items-center justify-between p-3 bg-gradient-to-b from-[rgba(5,4,10,.92)] to-[rgba(5,4,10,.35)]">
+  <section id="scrDino" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-start gap-1.5 px-[14px] pt-[calc(60px+env(safe-area-inset-top))] pb-[calc(18px+env(safe-area-inset-bottom))] text-center overflow-y-auto animate-[screenIn_.35s_ease-out]">
+    <div class="absolute inset-x-0 top-0 z-[2] flex items-center justify-between p-3 pt-[calc(.75rem+env(safe-area-inset-top))] bg-gradient-to-b from-[rgba(5,4,10,.92)] to-[rgba(5,4,10,.35)]">
       <button class="icon-btn pointer-events-auto h-[34px] w-[34px] rounded-[10px] text-[13px] font-extrabold bg-black/35 border border-white/20 backdrop-blur-[4px] hover:bg-white/15" id="btnBackDino">←</button>
       <h2 class="m-0 text-[15px] tracking-[4px]">DINO</h2>
       <div id="wallet" class="flex min-w-[52px] items-center justify-end gap-[5px] text-sm font-black text-[var(--accent)]"><span class="h-[9px] w-[9px] rounded-full bg-[radial-gradient(circle_at_35%_35%,#fff6b0,#ffc400_55%,#b37a00)] shadow-[0_0_6px_#ffc400]"></span><span id="walletN">0</span></div>
@@ -123,17 +123,17 @@
     <div id="dpSkills" class="mt-3 flex w-full max-w-[420px] flex-col gap-2 text-left"></div>
   </section>
 
-  <section id="scrHelp" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-center gap-[18px] p-5 text-center animate-[screenIn_.35s_ease-out] bg-[rgba(5,4,10,.82)]">
-    <div class="absolute inset-x-0 top-0 z-[2] flex items-center justify-between p-3 bg-gradient-to-b from-[rgba(5,4,10,.92)] to-[rgba(5,4,10,.35)]">
+  <section id="scrHelp" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-center gap-[18px] p-5 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-[calc(1.25rem+env(safe-area-inset-bottom))] text-center animate-[screenIn_.35s_ease-out] bg-[rgba(5,4,10,.82)]">
+    <div class="absolute inset-x-0 top-0 z-[2] flex items-center justify-between p-3 pt-[calc(.75rem+env(safe-area-inset-top))] bg-gradient-to-b from-[rgba(5,4,10,.92)] to-[rgba(5,4,10,.35)]">
       <button class="icon-btn pointer-events-auto h-[34px] w-[34px] rounded-[10px] text-[13px] font-extrabold bg-black/35 border border-white/20 backdrop-blur-[4px] hover:bg-white/15" id="btnBackHelp">←</button>
       <h2 class="m-0 text-[15px] tracking-[4px]">HOW TO PLAY</h2>
       <div></div>
     </div>
     <div class="w-full max-w-[400px] rounded-[14px] border border-white/15 bg-black/55 p-4 text-left text-xs leading-relaxed [&_p]:my-[6px] [&_hr]:my-[10px] [&_hr]:border-0 [&_hr]:border-t [&_hr]:border-dashed [&_hr]:border-white/20">
       <p><kbd>SPACE</kbd> / <kbd>↑</kbd> / tap — <b>Jump</b> (hold for higher)</p>
-      <p><kbd>↓</kbd> — <b>Duck</b> / fast-fall</p>
-      <p><kbd>SHIFT</kbd> / <kbd>→</kbd> — <b>Dash</b> (buy it in DINO UPGRADES)</p>
-      <p><kbd>P</kbd> / <kbd>ESC</kbd> — Pause &nbsp; <kbd>M</kbd> — Mute</p>
+      <p><kbd>↓</kbd> / <kbd>▼</kbd> — <b>Duck</b> / fast-fall</p>
+      <p><kbd>SHIFT</kbd> / <kbd>→</kbd> / <kbd>≫</kbd> — <b>Dash</b> (buy it in DINO UPGRADES)</p>
+      <p class="[@media(pointer:coarse)]:hidden"><kbd>P</kbd> / <kbd>ESC</kbd> — Pause &nbsp; <kbd>M</kbd> — Mute</p>
       <hr>
       <p>Reach the <b>⚑ finish</b> to clear a world. You have <b>3 hearts</b>.</p>
       <p>Clear worlds and earn ★ to unlock <b>19 dinosaurs</b>, each with its own strengths.</p>
@@ -147,7 +147,7 @@
     <button class="w-full max-w-[400px] cursor-pointer rounded-xl px-[14px] py-[11px] text-xs font-extrabold tracking-[2px] bg-[rgba(20,16,32,.6)] border border-white/20 backdrop-blur-md shadow-[0_4px_0_rgba(0,0,0,.5)] hover:bg-white/15 active:translate-y-[3px]" id="btnTraining">↻ REPLAY TRAINING</button>
   </section>
 
-  <section id="scrPause" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-center gap-[18px] p-5 text-center animate-[screenIn_.35s_ease-out] bg-[radial-gradient(ellipse_at_center,rgba(10,8,18,.72),rgba(5,4,10,.92))] backdrop-blur-[3px]">
+  <section id="scrPause" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-center gap-[18px] p-5 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-[calc(1.25rem+env(safe-area-inset-bottom))] text-center animate-[screenIn_.35s_ease-out] bg-[radial-gradient(ellipse_at_center,rgba(10,8,18,.72),rgba(5,4,10,.92))] backdrop-blur-[3px]">
     <h2 class="m-0 text-[34px] tracking-[6px]">PAUSED</h2>
     <div class="flex w-[min(260px,85%)] flex-col gap-[10px]">
       <button class="cursor-pointer rounded-xl px-[14px] py-[13px] text-sm font-extrabold tracking-[2px] bg-gradient-to-b from-[#ffd65c] to-[#ff8a3d] text-[#2a1004] border border-[#fff3c4] shadow-[0_4px_0_#8a3510,0_0_24px_rgba(255,150,60,.35)]" id="btnResume">▶ RESUME</button>
@@ -156,7 +156,7 @@
     </div>
   </section>
 
-  <section id="scrResult" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-center gap-[18px] p-5 text-center animate-[screenIn_.35s_ease-out] bg-[radial-gradient(ellipse_at_center,rgba(10,8,18,.72),rgba(5,4,10,.92))] backdrop-blur-[3px]">
+  <section id="scrResult" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-center gap-[18px] p-5 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-[calc(1.25rem+env(safe-area-inset-bottom))] text-center animate-[screenIn_.35s_ease-out] bg-[radial-gradient(ellipse_at_center,rgba(10,8,18,.72),rgba(5,4,10,.92))] backdrop-blur-[3px]">
     <div class="text-[30px] font-black tracking-[3px] text-[var(--accent)] [text-shadow:0_3px_0_#5a2a00,0_0_24px_rgba(255,200,60,.5)] animate-[titleSlam_.5s_cubic-bezier(.2,1.6,.4,1)]" id="resTitle">WORLD CLEAR!</div>
     <div id="resStars" class="flex gap-[10px] text-[44px]"><span class="scale-0 text-white/15">★</span><span class="scale-0 text-white/15">★</span><span class="scale-0 text-white/15">★</span></div>
     <div id="resStats" class="min-w-[220px] text-xs leading-[1.9]"></div>
@@ -171,7 +171,7 @@
     </div>
   </section>
 
-  <section id="scrOver" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-center gap-[18px] p-5 text-center animate-[screenIn_.35s_ease-out] bg-[radial-gradient(ellipse_at_center,rgba(10,8,18,.72),rgba(5,4,10,.92))] backdrop-blur-[3px]">
+  <section id="scrOver" class="hidden absolute inset-0 z-[2] flex flex-col items-center justify-center gap-[18px] p-5 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-[calc(1.25rem+env(safe-area-inset-bottom))] text-center animate-[screenIn_.35s_ease-out] bg-[radial-gradient(ellipse_at_center,rgba(10,8,18,.72),rgba(5,4,10,.92))] backdrop-blur-[3px]">
     <div id="overTitle" class="text-[44px] font-bold tracking-[1px] font-['Priestacy','Snell_Roundhand','Brush_Script_MT',cursive] text-[#ff3b5c] [text-shadow:0_3px_0_#4a0010,0_0_24px_rgba(255,40,80,.5)] animate-[titleSlam_.5s_cubic-bezier(.2,1.6,.4,1)]">Extinct</div>
     <div id="overStats" class="min-w-[220px] text-xs leading-[1.9]"></div>
     <div id="overTip" class="max-w-[280px] text-[11px] text-[var(--dim)]"></div>
