@@ -5,7 +5,7 @@
   const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
 
   function init() {
-    if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
+    if (ctx) { if (ctx.state !== 'running') ctx.resume(); return; } // iOS also reports 'interrupted'
     ctx = new (window.AudioContext || window.webkitAudioContext)();
     const comp = ctx.createDynamicsCompressor();
     comp.threshold.value = -14; comp.ratio.value = 4;

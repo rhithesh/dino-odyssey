@@ -851,7 +851,7 @@ pad($('btnDash'), () => game.dash(), () => {});
   const focusHint = () => $('focusHint').classList.toggle('hidden', document.hasFocus() || screen !== null);
   window.addEventListener('blur', () => { pause(); focusHint(); });
   window.addEventListener('focus', focusHint);
-  document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); else if (!game.paused) DR.Audio.resume(); }); // iOS interrupts audio in the background
   window.addEventListener('online', refreshTitle); window.addEventListener('offline', refreshTitle);
 
   // ---------------- buttons ----------------

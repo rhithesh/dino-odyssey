@@ -1,0 +1,10 @@
+{
+  "appId": "com.dinoodyssey.app",
+  "appName": "Dino Odyssey",
+  "webDir": "www",
+  "backgroundColor": "#0b0910",
+  "ios": {
+    "contentInset": "never",
+    "scrollEnabled": false
+  }
+}

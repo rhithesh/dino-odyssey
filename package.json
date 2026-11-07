@@ -5,9 +5,14 @@
   "scripts": {
     "clean": "node scripts/clean.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "build": "npm run clean && tsc -p tsconfig.json && tailwindcss -c tailwind.config.cjs -i sidepanel.css -o dist/sidepanel.css --minify && node scripts/copy-static.mjs"
+    "build": "npm run clean && tsc -p tsconfig.json && tailwindcss -c tailwind.config.cjs -i sidepanel.css -o dist/sidepanel.css --minify && node scripts/copy-static.mjs",
+    "build:web": "node scripts/clean.mjs www && tsc -p tsconfig.json --outDir www && tailwindcss -c tailwind.config.cjs -i sidepanel.css -o www/sidepanel.css --minify && node scripts/copy-web.mjs",
+    "ios": "npm run build:web && cap sync ios && cap open ios"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.6.0",
+    "@capacitor/core": "^8.6.0",
+    "@capacitor/ios": "^8.6.0",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3"
   }
