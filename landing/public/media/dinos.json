@@ -1,0 +1,356 @@
+[
+ {
+  "id": "mine",
+  "name": "HITHSAURUS",
+  "short": "HITHSAURUS",
+  "era": "Hatched today",
+  "tier": 1,
+  "hint": "",
+  "stats": {},
+  "classic": false,
+  "sparkle": false,
+  "color": "#5fd39a",
+  "w": 31,
+  "h": 31,
+  "n": 4
+ },
+ {
+  "id": "compy",
+  "name": "COMPSOGNATHUS",
+  "short": "COMPY",
+  "era": "Late Jurassic",
+  "tier": 1,
+  "hint": "",
+  "stats": {},
+  "classic": true,
+  "sparkle": false,
+  "color": "#2b2024",
+  "w": 28,
+  "h": 29,
+  "n": 4
+ },
+ {
+  "id": "unicorn",
+  "name": "UNICORNOSAURUS",
+  "short": "UNICORN",
+  "era": "Dreamhouse Cretaceous",
+  "tier": 1,
+  "hint": "",
+  "stats": {},
+  "classic": false,
+  "sparkle": true,
+  "color": "#ff9fd0",
+  "w": 33,
+  "h": 34,
+  "n": 4
+ },
+ {
+  "id": "hypsi",
+  "name": "HYPSILOPHODON",
+  "short": "HYPSI",
+  "era": "Early Cretaceous",
+  "tier": 1,
+  "hint": "EARN 3 ★",
+  "stats": {
+   "speedMul": 1.05
+  },
+  "classic": false,
+  "sparkle": false,
+  "color": "#6dbb4a",
+  "w": 31,
+  "h": 30,
+  "n": 4
+ },
+ {
+  "id": "raptor",
+  "name": "VELOCIRAPTOR",
+  "short": "RAPTOR",
+  "era": "Late Cretaceous",
+  "tier": 1,
+  "hint": "CLEAR WORLD 1",
+  "stats": {
+   "penaltyRec": 0.8
+  },
+  "classic": false,
+  "sparkle": false,
+  "color": "#c9763a",
+  "w": 31,
+  "h": 30,
+  "n": 4
+ },
+ {
+  "id": "galli",
+  "name": "GALLIMIMUS",
+  "short": "GALLI",
+  "era": "Late Cretaceous",
+  "tier": 2,
+  "hint": "EARN 6 ★",
+  "stats": {
+   "maxSpeedMul": 1.08
+  },
+  "classic": false,
+  "sparkle": false,
+  "color": "#d9c38a",
+  "w": 31,
+  "h": 31,
+  "n": 4
+ },
+ {
+  "id": "para",
+  "name": "PARASAUROLOPHUS",
+  "short": "PARA",
+  "era": "Late Cretaceous",
+  "tier": 2,
+  "hint": "CLEAR WORLD 2",
+  "stats": {
+   "close": 9
+  },
+  "classic": false,
+  "sparkle": false,
+  "color": "#5a8fd6",
+  "w": 31,
+  "h": 32,
+  "n": 4
+ },
+ {
+  "id": "dilo",
+  "name": "DILOPHOSAURUS",
+  "short": "DILO",
+  "era": "Early Jurassic",
+  "tier": 2,
+  "hint": "EARN 9 ★",
+  "stats": {
+   "light": 22
+  },
+  "classic": false,
+  "sparkle": false,
+  "color": "#a3cf3f",
+  "w": 31,
+  "h": 31,
+  "n": 4
+ },
+ {
+  "id": "pachy",
+  "name": "PACHYCEPHALOSAURUS",
+  "short": "PACHY",
+  "era": "Late Cretaceous",
+  "tier": 2,
+  "hint": "CLEAR WORLD 3",
+  "stats": {
+   "fallerShield": 1
+  },
+  "classic": false,
+  "sparkle": false,
+  "color": "#a86a3c",
+  "w": 31,
+  "h": 31,
+  "n": 4
+ },
+ {
+  "id": "iguano",
+  "name": "IGUANODON",
+  "short": "IGUANO",
+  "era": "Early Cretaceous",
+  "tier": 3,
+  "hint": "EARN 12 ★",
+  "stats": {
+   "magnet": 9
+  },
+  "classic": false,
+  "sparkle": false,
+  "color": "#5f8a4e",
+  "w": 32,
+  "h": 30,
+  "n": 4
+ },
+ {
+  "id": "carno",
+  "name": "CARNOTAURUS",
+  "short": "CARNO",
+  "era": "Late Cretaceous",
+  "tier": 3,
+  "hint": "CLEAR WORLD 4",
+  "stats": {
+   "lavaShield": 1
+  },
+  "classic": false,
+  "sparkle": false,
+  "color": "#c0392b",
+  "w": 31,
+  "h": 31,
+  "n": 4
+ },
+ {
+  "id": "allo",
+  "name": "ALLOSAURUS",
+  "short": "ALLO",
+  "era": "Late Jurassic",
+  "tier": 3,
+  "hint": "EARN 15 ★",
+  "stats": {
+   "comboDiv": 5
+  },
+  "classic": false,
+  "sparkle": false,
+  "color": "#c4a868",
+  "w": 31,
+  "h": 31,
+  "n": 4
+ },
+ {
+  "id": "stego",
+  "name": "STEGOSAURUS",
+  "short": "STEGO",
+  "era": "Late Jurassic",
+  "tier": 3,
+  "hint": "CLEAR WORLD 5",
+  "stats": {
+   "inv": 2
+  },
+  "classic": false,
+  "sparkle": false,
+  "color": "#6aa06a",
+  "w": 35,
+  "h": 26,
+  "n": 4
+ },
+ {
+  "id": "ankylo",
+  "name": "ANKYLOSAURUS",
+  "short": "ANKY",
+  "era": "Late Cretaceous",
+  "tier": 4,
+  "hint": "EARN 18 ★",
+  "stats": {
+   "hearts": 4,
+   "jumpV": 565
+  },
+  "classic": false,
+  "sparkle": false,
+  "color": "#8a7a5a",
+  "w": 36,
+  "h": 25,
+  "n": 4
+ },
+ {
+  "id": "trike",
+  "name": "TRICERATOPS",
+  "short": "TRIKE",
+  "era": "Late Cretaceous",
+  "tier": 4,
+  "hint": "CLEAR WORLD 6",
+  "stats": {
+   "breaker": 1
+  },
+  "classic": false,
+  "sparkle": false,
+  "color": "#6a8fb0",
+  "w": 35,
+  "h": 25,
+  "n": 4
+ },
+ {
+  "id": "spino",
+  "name": "SPINOSAURUS",
+  "short": "SPINO",
+  "era": "Late Cretaceous",
+  "tier": 4,
+  "hint": "EARN 20 ★",
+  "stats": {
+   "swimThrust": 1450
+  },
+  "classic": false,
+  "sparkle": false,
+  "color": "#4f7a8f",
+  "w": 31,
+  "h": 31,
+  "n": 4
+ },
+ {
+  "id": "ptera",
+  "name": "PTERANODON",
+  "short": "PTERA",
+  "era": "Late Cretaceous",
+  "tier": 4,
+  "hint": "EARN 21 ★",
+  "stats": {
+   "hold": 0.3
+  },
+  "classic": false,
+  "sparkle": false,
+  "color": "#e6d9c3",
+  "w": 31,
+  "h": 30,
+  "n": 4
+ },
+ {
+  "id": "micro",
+  "name": "MICRORAPTOR",
+  "short": "MICRO",
+  "era": "Early Cretaceous",
+  "tier": 4,
+  "hint": "CLEAR WORLD 7",
+  "stats": {
+   "coyote": 0.14,
+   "buffer": 0.18
+  },
+  "classic": false,
+  "sparkle": false,
+  "color": "#2a2f4a",
+  "w": 31,
+  "h": 29,
+  "n": 4
+ },
+ {
+  "id": "trex",
+  "name": "TYRANNOSAURUS REX",
+  "short": "T-REX",
+  "era": "Late Cretaceous",
+  "tier": 5,
+  "hint": "CLEAR WORLD 8",
+  "stats": {
+   "bossMul": 2
+  },
+  "classic": false,
+  "sparkle": false,
+  "color": "#6b7040",
+  "w": 32,
+  "h": 31,
+  "n": 4
+ },
+ {
+  "id": "mosa",
+  "name": "MOSASAURUS",
+  "short": "MOSA",
+  "era": "Late Cretaceous",
+  "tier": 5,
+  "hint": "EARN 24 ★",
+  "stats": {
+   "sinkIdle": 200
+  },
+  "classic": false,
+  "sparkle": false,
+  "color": "#2f6f8f",
+  "w": 32,
+  "h": 30,
+  "n": 4
+ },
+ {
+  "id": "brachio",
+  "name": "BRACHIOSAURUS",
+  "short": "BRACHIO",
+  "era": "Late Jurassic",
+  "tier": 5,
+  "hint": "3★ EVERY WORLD",
+  "stats": {
+   "coinMul": 2,
+   "hearts": 1
+  },
+  "classic": false,
+  "sparkle": false,
+  "color": "#8fa8a0",
+  "w": 32,
+  "h": 29,
+  "n": 4
+ }
+]
