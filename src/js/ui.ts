@@ -265,7 +265,7 @@
       if (!locked) tg.drawImage(d, 150 - (d.ax || 0), Math.round(56 * .78) - d.height + (d.ay || 0));
       thumb.className = `absolute inset-0 h-full w-full rounded-[13px] [image-rendering:pixelated] ${locked ? 'grayscale brightness-[.45]' : ''}`;
       card.appendChild(thumb);
-      const info = document.createElement('div'); info.className = `absolute inset-0 z-[1] rounded-[13px] flex flex-col justify-between bg-[rgba(0,0,0,.62)] py-[10px] pl-2 ${locked ? 'pr-[116px] [&>div:first-child]:opacity-60' : ''}`;
+      const info = document.createElement('div'); info.className = `absolute inset-0 z-[1] rounded-[13px] flex flex-col justify-between bg-[rgba(0,0,0,.62)] py-[10px] pl-3.5 pr-3 ${locked ? '!pr-[116px] [&>div:first-child]:opacity-60' : ''}`;
       info.innerHTML = `
         <div><div class="text-[10px] tracking-[3px] opacity-80">WORLD ${L.id}</div><div class="text-[17px] font-black tracking-wide [text-shadow:0_2px_0_#000]">${L.name}</div><div class="text-[10px] opacity-[.85]">${L.twist.split('—')[0].trim()}</div></div>
         ${locked ? `<div class="flex items-center gap-1.5 text-[10px] tracking-wide text-white/70">${padlockIcon(10)}Clear <b class="text-[var(--accent)]">World ${L.id - 1}</b></div>` : `<div class="flex items-center justify-start gap-[10px] text-[11px]"><span class="flex items-center">${[1, 2, 3].map(i => `<span class="text-sm ${i <= st ? 'text-[var(--accent)] [text-shadow:0_0_6px_var(--accent)]' : 'text-white/25'}">★</span>`).join('')}</span>
